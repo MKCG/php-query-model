@@ -1,0 +1,29 @@
+{
+    "name": "mkcg/php-query-model",
+    "version": "0.1.0",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Kévin Masseix",
+            "role": "Architect",
+            "email": "masseix.kevin@gmail.com"
+        }
+    ],
+    "keywords": [ "cqrs", "projection", "database", "doctrine", "redis", "elasticsearch" ],
+    "license": "GPL-3.0-only",
+    "autoload": {
+        "psr-4": {
+            "MKCG\\Model\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.2.0",
+        "psr/http-client": "^1.0"
+    },
+    "suggest": {
+        "algolia/algoliasearch-client-php": "Needed to use the algolia driver",
+        "doctrine/dbal": "Needed to use the doctrine driver",
+        "predis/predis": "Needed to use the redis driver",
+        "ethanhann/redisearch-php": "Needed to use the redisearch driver"
+    }
+}

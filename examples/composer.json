@@ -1,0 +1,28 @@
+{
+    "version": "0.1.0",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Kévin Masseix",
+            "role": "Architect",
+            "email": "masseix.kevin@gmail.com"
+        }
+    ],
+    "keywords": [ "cqrs", "projection", "database", "doctrine", "redis", "elasticsearch" ],
+    "license": "GPL-3.0-only",
+    "autoload": {
+        "psr-4": {
+            "MKCG\\Model\\": "./../src/",
+            "MKCG\\Examples\\SocialNetwork\\": "./SocialNetwork/"
+        }
+    },
+    "require": {
+        "php": "^7.2.0",
+        "psr/http-client": "^1.0",
+        "doctrine/dbal": "^2.10",
+        "ethanhann/redisearch-php": "^1.9",
+        "predis/predis": "^1.1",
+        "fzaninotto/faker": "^1.9",
+        "guzzle/guzzle": "^3.9"
+    }
+}

@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=es01
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+
+  redisearch:
+    image: redislabs/redisearch:latest
+    restart: always
+
+  php_query_model:
+    image: php_query_model
+    container_name: php_query_model
+    build:
+      context: ./
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - ./../:/home/php-query-model
+    depends_on:
+      - mysql
+      - redisearch
+      - elasticsearch
+    command: tail -f /dev/null
+    restart: always
