@@ -4,8 +4,8 @@ namespace MKCG\Model;
 
 abstract class GenericSchema
 {
-    protected $sourceType = '';
-    protected $tableName = '';
+    protected $driverName = '';
+    protected $name = '';
     protected $entityClass = GenericEntity::class;
     protected $primaryKeys = [];
     protected $filterableFields = [];
@@ -17,14 +17,14 @@ abstract class GenericSchema
         return new Model(static::class, $setType, $alias);
     }
 
-    public function getSourceType() : string
+    public function getDriverName() : string
     {
-        return $this->sourceType;
+        return $this->driverName;
     }
 
-    public function getFullyQualifiedTableName()
+    public function getFullyQualifiedName()
     {
-        return $this->tableName;
+        return $this->name;
     }
 
     public function getEntityClass()

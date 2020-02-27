@@ -37,7 +37,7 @@ abstract class Elasticsearch implements DriverInterface
             $search['query'] = [ 'bool' => $filters ];
         }
 
-        $request = $this->makeHttpRequest($query->table, $search);
+        $request = $this->makeHttpRequest($query->name, $search);
         $response = $this->client->sendRequest($request);
 
         if ($request->getStatusCode() < 200 || $response->getStatusCode() >= 300) {

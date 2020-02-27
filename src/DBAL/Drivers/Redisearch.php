@@ -19,7 +19,7 @@ class Redisearch implements DriverInterface
 
     public function search(Query $query) : Result
     {
-        $queryBuilder = (new Builder($this->client, $query->table))
+        $queryBuilder = (new Builder($this->client, $query->name))
             ->return($query->fields);
 
         $this->applyFilters($queryBuilder, $query);

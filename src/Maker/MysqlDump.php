@@ -91,7 +91,7 @@ class MysqlDump
                         break;
 
                     default:
-                        var_dump($type);
+                        // var_dump($type);
                         break;
                 }
 

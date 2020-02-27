@@ -6,6 +6,7 @@ use MKCG\Examples\SocialNetwork\Schema;
 use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\QueryCriteria;
 use MKCG\Model\DBAL\Drivers;
+use MKCG\Model\DBAL\QueryEngine;
 
 $redisClient = new \Predis\Client(['scheme' => 'tcp', 'host' => 'redisearch', 'port' => 6379]);
 $httpClient = new \Guzzle\Http\Client('http://elasticsearch:9200/');
@@ -16,51 +17,108 @@ $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
     'driver' => 'pdo_mysql',
 ]);
 
-// createFakeData($sqlConnection);
+$fixturePath = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 
+// createFakeData($sqlConnection, $fixturePath . DIRECTORY_SEPARATOR);
 
 $engine = new \MKCG\Model\DBAL\QueryEngine('mysql');
 $engine->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql');
+$engine->registerDriver(new Drivers\CsvReader($fixturePath), 'csv');
 
-$model = Schema\User::make('default', 'user')
-    ->with(Schema\Address::make())
-    ->with(Schema\Post::make());
+$startedAt = microtime(true);
 
-$criteria = (new QueryCriteria())
-    ->forCollection('user')
-        ->addFilter('status', FilterInterface::FILTER_IN, [ 2 , 3 , 5 , 7 ])
-        ->addFilter('registered_at', FilterInterface::FILTER_GREATER_THAN_EQUAL, '2000-01-01')
-        ->addSort('firstname', 'ASC')
-        ->addSort('lastname', 'ASC')
-        ->setLimit(10)
-    ->forCollection('addresses')
-        ->setLimitByParent(2)
-    ->forCollection('posts')
-        ->addFilter('title', FilterInterface::FILTER_FULLTEXT_MATCH, 'ab')
-;
+searchUsers($engine);
+searchOrder($engine);
 
-// $users = $engine->query($model, $criteria);
+$took = microtime(true) - $startedAt;
+echo "Took : " . round($took, 3) . "s\n";
 
-// echo json_encode($users->getContent(), JSON_PRETTY_PRINT) . "\n";
-// echo "\nFound : " . $users->getCount() . " users\n";
+function searchOrder(QueryEngine $engine)
+{
+    $model = Schema\Order::make('default', 'order')
+        ->with(Schema\User::make()
+            ->with(Schema\Address::make())
+            ->with(Schema\Post::make())
+        )
+    ;
 
-$iterator = $engine->scroll($model, $criteria);
+    $criteria = (new QueryCriteria())
+        ->forCollection('order')
+            ->addFilter('firstname', FilterInterface::FILTER_FULLTEXT_MATCH, 'al')
+            ->addFilter('price', FilterInterface::FILTER_GREATER_THAN_EQUAL, 15)
+            ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 10)
+            ->addFilter('vat', FilterInterface::FILTER_IN, [ 10, 20 ])
+            ->addFilter('credit_card_type', FilterInterface::FILTER_NOT_IN, ['Visa', 'Visa Retired'])
+        ->forCollection('addresses')
+            ->setLimitByParent(3)
+        ->forCollection('posts')
+            ->setLimitByParent(2)
+        ;
 
-foreach ($iterator as $i => $user) {
-    var_dump($user);
+    $orders = [];
+
+    foreach ($engine->scroll($model, $criteria) as $i => $order) {
+        $orders[] = $order;
+    }
+
+    echo json_encode($orders, JSON_PRETTY_PRINT) . "\n\n";
+    echo "Found : " . count($orders) . " items\n\n";
 }
 
-function createFakeData(\Doctrine\DBAL\Connection $connection)
+function searchUsers(QueryEngine $engine)
 {
-    $connection->exec('DROP DATABASE socialnetwork;');
+    $model = Schema\User::make('default', 'user')
+        ->with(Schema\Address::make())
+        ->with(Schema\Post::make());
 
+    $criteria = (new QueryCriteria())
+        ->forCollection('user')
+            ->addFilter('status', FilterInterface::FILTER_IN, [ 2 , 3 , 5 , 7 ])
+            ->addFilter('registered_at', FilterInterface::FILTER_GREATER_THAN_EQUAL, '2000-01-01')
+            ->addSort('firstname', 'ASC')
+            ->addSort('lastname', 'ASC')
+            ->setLimit(10)
+        ->forCollection('addresses')
+            ->setLimitByParent(2)
+        ->forCollection('posts')
+            ->addFilter('title', FilterInterface::FILTER_FULLTEXT_MATCH, 'ab')
+    ;
+
+    $users = $engine->query($model, $criteria);
+
+    echo json_encode($users->getContent(), JSON_PRETTY_PRINT) . "\n";
+    echo "\nFound : " . $users->getCount() . " users\n";
+
+    $iterator = $engine->scroll($model, $criteria);
+
+    foreach ($iterator as $i => $user) {
+        echo json_encode($user, JSON_PRETTY_PRINT) . "\n";
+    }
+}
+
+function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePath)
+{
     createDatabaseSchema($connection, [ new Schema\User(), new Schema\Address(), new Schema\Post() ]);
 
     $faker = \Faker\Factory::create();
 
+    $csvOrderHandler = fopen($fixturePath . (new Schema\Order())->getFullyQualifiedName(), 'w+');
+    fputcsv($csvOrderHandler, [
+        'id',
+        'id_user',
+        'firstname',
+        'lastname',
+        'credit_card_type',
+        'credit_card_number',
+        'price',
+        'vat',
+        'currency'
+    ]);
+
     $userCounter = 0;
     $addressCounter = 0;
     $postCounter = 0;
+    $orderCounter = 0;
 
     $statements = '';
 
@@ -74,6 +132,24 @@ function createFakeData(\Doctrine\DBAL\Connection $connection)
             'registered_at' => $faker->date,
             'status' => $faker->numberBetween(0, 10)
         ];
+
+        for ($j = 0; $j < 20; $j++) {
+            fputcsv($csvOrderHandler, [
+                ++$orderCounter,
+                $user['id'],
+                $user['firstname'],
+                $user['lastname'],
+                $faker->creditCardType,
+                $faker->creditCardNumber,
+                rand(1, 100),
+                [5, 10, 20][rand(0, 2)],
+                $faker->currencyCode
+            ]);
+
+            if (rand(0, 10) < 3) {
+                break;
+            }
+        }
 
         $query = sprintf(
             "INSERT INTO socialnetwork.user
@@ -151,23 +227,30 @@ function createFakeData(\Doctrine\DBAL\Connection $connection)
 
         if ($i % 50 === 0) {
             $connection->exec($statements);
-            echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts\n";
+            echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
             $statements = '';
         }
     }
 
     if ($statements !== '') {
         $connection->exec($statements);
-        echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts\n";
+        echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
     }
+
+    fclose($csvOrderHandler);
 }
 
 function createDatabaseSchema(\Doctrine\DBAL\Connection $connection, array $schema)
 {
     $databases = $connection->query('SHOW DATABASES;')->fetchAll(\PDO::FETCH_COLUMN);
 
+    if (in_array('socialnetwork', $databases)) {
+        $connection->exec('DROP DATABASE socialnetwork;');
+        $databases = $connection->query('SHOW DATABASES;')->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
     foreach ($schema as $scheme) {
-        list($database, $table) = explode('.', $scheme->getFullyQualifiedTableName());
+        list($database, $table) = explode('.', $scheme->getFullyQualifiedName());
 
         if (!in_array($database, $databases)) {
             $connection->exec('CREATE DATABASE ' . $database);

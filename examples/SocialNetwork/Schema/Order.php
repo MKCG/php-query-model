@@ -5,9 +5,10 @@ namespace MKCG\Examples\SocialNetwork\Schema;
 use MKCG\Model\GenericSchema;
 use MKCG\Model\GenericEntity;
 
-class Post extends GenericSchema
+class Order extends GenericSchema
 {
-    protected $name = 'socialnetwork.post';
+    protected $name = 'orders.csv';
+    protected $driverName = 'csv';
     protected $entityClass = GenericEntity::class;
     protected $primaryKeys = ['id'];
 
@@ -15,20 +16,23 @@ class Post extends GenericSchema
         'default' => [
             'id',
             'id_user',
-            'published_at',
-            'title',
-            'content',
+            'firstname',
+            'lastname',
+            'credit_card_type',
+            'credit_card_number',
+            'price',
+            'vat',
+            'currency'
         ],
     ];
 
     protected $relations = [
-        'author' => [
+        'customer' => [
             'schema' => User::class,
             'match' => [
                 'id_user' => 'id'
             ],
             'isCollection' => false
-        ]
+        ],
     ];
 }
-

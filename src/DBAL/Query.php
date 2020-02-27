@@ -4,7 +4,7 @@ namespace MKCG\Model\DBAL;
 
 class Query
 {
-    public $table = '';
+    public $name = '';
     public $filters = [];
     public $aggregations = [];
     public $sort = [];

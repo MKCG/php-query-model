@@ -53,18 +53,20 @@ class QueryEngine
             throw new \LogicException("Limit must be > 0 to be able to scroll");
         }
 
+        $criteria[$alias]['scroll'] = new ScrollContext();
+
         while (true) {
             $result = $this->doQuery($model, $criteria);
-
-            if ($result->getCount() < $criteria[$alias]['offset']) {
-                break;
-            }
 
             foreach ($result->getContent() as $item) {
                 yield $item;
             }
 
             $criteria[$alias]['offset'] += $criteria[$alias]['limit'];
+
+            if (!empty($criteria[$alias]['scroll']->data['end']) || count($result->getContent()) === 0) {
+                break;
+            }
         }
     }
 
@@ -86,7 +88,7 @@ class QueryEngine
         }
 
         $schema = $this->schemaCache[$schemaClassName];
-        $driverName = $schema->getSourceType() ?: $this->defaultDriverName;
+        $driverName = $schema->getDriverName() ?: $this->defaultDriverName;
 
         if (!isset($this->drivers[$driverName])) {
             return Result::make([], '');
@@ -266,7 +268,11 @@ class QueryEngine
             $mapFromParent = [];
 
             foreach ($parents->getContent() as $parentItem) {
-                $mapFromParent[$parentItem[$from]] = $parentItem;
+                if (!isset($mapFromParent[$parentItem[$from]])) {
+                    $mapFromParent[$parentItem[$from]] = [];
+                }
+
+                $mapFromParent[$parentItem[$from]][] = $parentItem;
             }
 
             $mapItemByParent = [];
@@ -285,9 +291,11 @@ class QueryEngine
 
             foreach ($mapItemByParent as $parentKey => $toInject) {
                 if (isset($mapFromParent[$parentKey])) {
-                    $mapFromParent[$parentKey][$alias] = $injectAsCollection
-                        ? $toInject
-                        : $toInject[0];
+                    foreach ($mapFromParent[$parentKey] as $parentItem) {
+                        $parentItem[$alias] = $injectAsCollection
+                            ? $toInject
+                            : $toInject[0];
+                    }
                 }
             }
         } else {
@@ -329,7 +337,7 @@ class QueryEngine
         $query = new Query();
 
         $query->fields = $schema->getFields($model->getSetType());
-        $query->table = $schema->getFullyQualifiedTableName();
+        $query->name = $schema->getFullyQualifiedName();
         $query->primaryKeys = $schema->getPrimaryKeys();
         $query->entityClass = $schema->getEntityClass();
 
@@ -355,6 +363,10 @@ class QueryEngine
 
         if (isset($criteria['sub_context_ref'])) {
             $query->context['parent_ref'] = $criteria['sub_context_ref'];
+        }
+
+        if (isset($criteria['scroll'])) {
+            $query->context['scroll'] = $criteria['scroll'];
         }
 
         return $query;

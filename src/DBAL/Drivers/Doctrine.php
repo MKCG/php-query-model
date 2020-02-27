@@ -23,13 +23,13 @@ class Doctrine implements DriverInterface
 
     public function search(Query $query) : Result
     {
-        if (empty($query->table)) {
+        if (empty($query->name)) {
             throw new \LogicException("Table must be defined");
         }
 
         $queryBuilder = $this->connection
             ->createQueryBuilder()
-            ->from($query->table)
+            ->from($query->name)
         ;
 
         $this

@@ -7,7 +7,7 @@ use MKCG\Model\GenericEntity;
 
 class Address extends GenericSchema
 {
-    protected $tableName = 'socialnetwork.address';
+    protected $name = 'socialnetwork.address';
     protected $entityClass = GenericEntity::class;
     protected $primaryKeys = ['id'];
 
