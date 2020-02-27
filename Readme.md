@@ -10,6 +10,8 @@ Drivers
 * MongoDB (To do)
 * Algolia (To do)
 * Redis (To do)
+* Csv reader (To do)
+* Rss reader (To do)
 * ScyllaDB (TBD)
 * Cassandra (TBD)
 * Solr (TBD)
@@ -22,6 +24,7 @@ From : ./examples
 
 ```
 docker-compose up --build -d
+docker exec -it php_query_model sh -c "cd /home/php-query-model/examples && composer install"
 docker exec -it php_query_model sh -c "php /home/php-query-model/examples/index.php"
 ```
 
