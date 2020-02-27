@@ -5,9 +5,9 @@ Simple multi-database library to search content on different engines and aggrega
 # Drivers
 
 * Doctrine (only MySQL and MariaDB are supported)
+* CsvReader
 * Elasticsearch (Not tested)
 * Redisearch (WIP)
-* CsvReader (WIP)
 * MongoDB (To do)
 * Algolia (To do)
 * Redis (To do)
