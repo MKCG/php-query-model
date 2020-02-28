@@ -35,7 +35,6 @@ class Sitemaps extends GenericSchema
     {
         $this->addConfiguration('http', (new Http())
                 ->addHeader('User-Agent', 'Kévin Masseix | Looking for opportunities | https://github.com/MKCG')
-                ->setUrl('https://www.sitemaps.org/sitemap.xml')
             );
 
         return $this;

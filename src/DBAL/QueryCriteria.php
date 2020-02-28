@@ -67,11 +67,11 @@ class QueryCriteria
     {
         $this->assert();
 
-        if (!isset($this->criteria['custom_filters'])) {
-            $this->criteria['custom_filters'] = [];
+        if (!isset($this->criteria[$this->currentCollection]['custom_filters'])) {
+            $this->criteria[$this->currentCollection]['custom_filters'] = [];
         }
 
-        $this->criteria['custom_filters'][] = $name;
+        $this->criteria[$this->currentCollection]['custom_filters'][] = $name;
 
         return $this;
     }
@@ -80,11 +80,11 @@ class QueryCriteria
     {
         $this->assert();
 
-        if (!isset($this->criteria['callable_filters'])) {
-            $this->criteria['callable_filters'] = [];
+        if (!isset($this->criteria[$this->currentCollection]['callable_filters'])) {
+            $this->criteria[$this->currentCollection]['callable_filters'] = [];
         }
 
-        $this->criteria['callable_filters'][] = $callable;
+        $this->criteria[$this->currentCollection]['callable_filters'][] = $callable;
 
         return $this;
     }
@@ -133,6 +133,19 @@ class QueryCriteria
         }
 
         $this->criteria[$this->currentCollection]['sort'][] = [ $field , $dir ];
+        return $this;
+    }
+
+    public function addOption(string $name, $value) : self
+    {
+        $this->assert();
+
+        if (!isset($this->criteria[$this->currentCollection]['options'])) {
+            $this->criteria[$this->currentCollection]['options'] = [];
+        }
+
+        $this->criteria[$this->currentCollection]['options'][$name] = $value;
+
         return $this;
     }
 

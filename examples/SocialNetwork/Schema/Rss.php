@@ -6,7 +6,7 @@ use MKCG\Model\GenericSchema;
 use MKCG\Model\GenericEntity;
 use MKCG\Model\Configurations\Http;
 
-class PackagistRss extends GenericSchema
+class Rss extends GenericSchema
 {
     protected $driverName = 'rss';
     protected $entityClass = GenericEntity::class;
@@ -34,7 +34,6 @@ class PackagistRss extends GenericSchema
         $this->configurations = [
             'http' => (new Http())
                 ->addHeader('User-Agent', 'Kévin Masseix | Looking for opportunities | https://github.com/MKCG')
-                ->setUrl('https://packagist.org/feeds/packages.rss')
         ];
 
         return $this;

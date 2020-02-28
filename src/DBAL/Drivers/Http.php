@@ -73,12 +73,14 @@ abstract class Http implements DriverInterface
 
         $configuration = $query->context['http'];
 
+        $options = $query->context['options'] ?: [];
+
         $request = new HttpRequest();
-        $request->url = $configuration->getUrl() ?: $this->defaultUrl;
-        $request->uri = $configuration->getUri() ?: $this->defaultUri;
-        $request->method = $configuration->getMethod() ?: $this->defaultMethod;
-        $request->headers = $configuration->getHeaders() ?: $this->defaultHeaders;
-        $request->options = $configuration->getOptions() ?: $this->defaultOptions;
+        $request->url = $options['url'] ?: ($configuration->getUrl() ?: $this->defaultUrl);
+        $request->uri = $options['uri'] ?: ($configuration->getUri() ?: $this->defaultUri);
+        $request->method = $options['method'] ?: ($configuration->getMethod() ?: $this->defaultMethod);
+        $request->headers = $options['headers'] ?: ($configuration->getHeaders() ?: $this->defaultHeaders);
+        $request->options = $options['options'] ?: ($configuration->getOptions() ?: $this->defaultOptions);
 
         $request->url = filter_var($request->url, FILTER_VALIDATE_URL);
 

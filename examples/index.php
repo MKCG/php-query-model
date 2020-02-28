@@ -46,18 +46,24 @@ echo "Took : " . round($took, 3) . "s\n";
 
 function searchSitemaps(QueryEngine $engine)
 {
-    $model = Schema\Sitemaps::make();
+    $model = Schema\Sitemaps::make('default', 'sitemap');
+    $criteria = (new QueryCriteria())
+        ->forCollection('sitemap')
+            ->addOption('url', 'https://www.sitemaps.org/sitemap.xml');
 
-    foreach ($engine->scroll($model, new QueryCriteria()) as $url) {
+    foreach ($engine->scroll($model, $criteria) as $url) {
         echo json_encode($url, JSON_PRETTY_PRINT) . "\n\n";
     }
 }
 
 function searchPackages(QueryEngine $engine)
 {
-    $model = Schema\PackagistRss::make();
+    $model = Schema\Rss::make('default', 'rss');
+    $criteria = (new QueryCriteria())
+        ->forCollection('rss')
+            ->addOption('url', 'https://packagist.org/feeds/packages.rss');
 
-    foreach ($engine->scroll($model, new QueryCriteria()) as $channel) {
+    foreach ($engine->scroll($model, $criteria) as $channel) {
         echo json_encode($channel, JSON_PRETTY_PRINT) . "\n\n";
     }
 }

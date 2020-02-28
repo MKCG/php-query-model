@@ -382,6 +382,10 @@ class QueryEngine
             $query->context['scroll'] = $criteria['scroll'];
         }
 
+        if (isset($criteria['options'])) {
+            $query->context['options'] = $criteria['options'];
+        }
+
         return $query;
     }
 }
