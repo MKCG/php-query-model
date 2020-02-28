@@ -2,6 +2,7 @@
 
 Simple multi-database library to search content on different engines and aggregate those results into document-oriented structures.
 
+
 # Drivers
 
 * Doctrine (only MySQL and MariaDB are supported)
@@ -111,6 +112,64 @@ docker-compose up --build -d
 docker exec -it php_query_model sh -c "cd /home/php-query-model/examples && composer install"
 docker exec -it php_query_model sh -c "php /home/php-query-model/examples/index.php"
 ```
+
+# Roadmap
+
+## Expected features
+
+Work In progress
+----------------
+
+| Feature              | Description                             |
+| -------------------- | --------------------------------------- |
+| Elasticsearch Driver |                                         |
+| Redisearch Driver    |                                         |
+| Aggregations         |                                         |
+| Content type         | Define the type of each schema property |
+
+Backlog
+-------
+
+| Feature                   | Description                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| Async HTTP requests       | Perform non-blocking HTTP requests                                                 |
+| Cacheable requests        | Cache results and detect what to invalidate using surrogate keys                   |
+| Content synchronizer      | Use streamed eventlog to synchronize content between each datasource               |
+| Error handling strategies | Allow to apply different strategy in case of a failure : crash, retry, fallback... |
+| Generate schema classes   | Generate Schema classes by analyzing each database schema                          |
+
+
+Drivers "nice to have"
+----------------------
+
+Database Drivers
+================
+* Algolia
+* ArangoDB
+* Cassandra
+* \Illuminate\Eloquent (library used by Laravel)
+* MongoDB
+* Neo4J
+* PostgreSQL
+* Redis
+* ScyllaDB
+* Solr
+
+Storage
+=======
+* AWS S3
+* File system
+* OpenIO
+
+Infrastructure
+==============
+* AWS
+* OVH
+
+Service
+=======
+* Cloudinary
+* Sendinblue
 
 # Contribution
 
