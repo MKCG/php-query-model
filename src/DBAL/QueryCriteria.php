@@ -63,6 +63,32 @@ class QueryCriteria
         return $this;
     }
 
+    public function addCustomFilter(string $name) : self
+    {
+        $this->assert();
+
+        if (!isset($this->criteria['custom_filters'])) {
+            $this->criteria['custom_filters'] = [];
+        }
+
+        $this->criteria['custom_filters'][] = $name;
+
+        return $this;
+    }
+
+    public function addCallableFilter(callable $callable) : self
+    {
+        $this->assert();
+
+        if (!isset($this->criteria['callable_filters'])) {
+            $this->criteria['callable_filters'] = [];
+        }
+
+        $this->criteria['callable_filters'][] = $callable;
+
+        return $this;
+    }
+
     public function addAggregation(string $aggType, array $config) : self
     {
         $this->assert();

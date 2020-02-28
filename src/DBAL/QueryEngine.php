@@ -8,17 +8,25 @@ use MKCG\Model\GenericSchema;
 
 class QueryEngine
 {
+    const FAIL_STRATEGY_CRASH = 1;
+    const FAIL_STRATEGY_IGNORE_LOGIC_ERROR = 2;
+    const FAIL_STRATEGY_IGNORE_RUNTIME_ERROR = 4;
+    const FAIL_STRATEGY_RETRY_ONCE = 8;
+
     private $drivers = [];
     private $schemaCache = [];
     private $defaultDriverName;
     private $injectAsCollectionByDefault;
+    private $defaultFailureStrategy;
 
     public function __construct(
         string $defaultDriverName = '',
-        bool $injectAsCollectionByDefault = true
+        bool $injectAsCollectionByDefault = true,
+        int $defaultFailureStrategy = self::FAIL_STRATEGY_CRASH
     ) {
         $this->defaultDriverName = $defaultDriverName;
         $this->injectAsCollectionByDefault = $injectAsCollectionByDefault;
+        $this->defaultFailureStrategy = $defaultFailureStrategy;
     }
 
     public function registerDriver(DriverInterface $driver, string $name, bool $isDefault = false)
@@ -78,19 +86,21 @@ class QueryEngine
     private function doQuery(Model $model, array $criteria) : Result
     {
         if (empty($this->drivers)) {
+            // @todo : Apply failure strategy
             return Result::make([], '');
         }
 
         $schemaClassName = $model->getFromClass();
 
         if (!isset($this->schemaCache[$schemaClassName])) {
-            $this->schemaCache[$schemaClassName] = new $schemaClassName();
+            $this->schemaCache[$schemaClassName] = (new $schemaClassName())->initConfigurations();
         }
 
         $schema = $this->schemaCache[$schemaClassName];
         $driverName = $schema->getDriverName() ?: $this->defaultDriverName;
 
         if (!isset($this->drivers[$driverName])) {
+            // @todo : Apply failure strategy
             return Result::make([], '');
         }
 
@@ -100,6 +110,7 @@ class QueryEngine
         try {
             $result = $this->drivers[$driverName]->search($query);
         } catch (\Exception $e) {
+            // @todo : Apply failure strategy
             return Result::make([], '');
         }
 
@@ -360,6 +371,8 @@ class QueryEngine
         if (isset($criteria['sort'])) {
             $query->sort = $criteria['sort'];
         }
+
+        $query->context = $schema->getConfigurations();
 
         if (isset($criteria['sub_context_ref'])) {
             $query->context['parent_ref'] = $criteria['sub_context_ref'];

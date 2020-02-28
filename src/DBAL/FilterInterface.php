@@ -13,4 +13,5 @@ interface FilterInterface
     const FILTER_LESS_THAN = 'lt';
     const FILTER_LESS_THAN_EQUAL = 'lte';
     const FILTER_FULLTEXT_MATCH = 'fulltext_match';
+    const FILTER_CUSTOM = 'custom';
 }

@@ -21,14 +21,21 @@ class Post extends GenericSchema
         ],
     ];
 
-    protected $relations = [
-        'author' => [
-            'schema' => User::class,
-            'match' => [
-                'id_user' => 'id'
-            ],
-            'isCollection' => false
-        ]
-    ];
-}
+    public function initRelations() : self
+    {
+        $this->addRelation('author', User::class, ['id_user' => 'id'], false);
+        return $this;
+    }
 
+    public function initConfigurations() : self
+    {
+        $this->addCustomFilter('complex_public', [Post::class, 'applyPublicFilters']);
+
+        return $this;
+    }
+
+    public static function applyPublicFilters(array $args)
+    {
+
+    }
+}

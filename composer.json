@@ -9,7 +9,18 @@
             "email": "masseix.kevin@gmail.com"
         }
     ],
-    "keywords": [ "cqrs", "projection", "database", "doctrine", "redis", "elasticsearch", "csv", "redisearch" ],
+    "keywords": [
+        "cqrs",
+        "projection",
+        "database",
+        "doctrine",
+        "redis",
+        "elasticsearch",
+        "csv",
+        "redisearch",
+        "rss",
+        "sitemap"
+    ],
     "license": "GPL-3.0-only",
     "autoload": {
         "psr-4": {

@@ -11,6 +11,7 @@ abstract class GenericSchema
     protected $filterableFields = [];
     protected $types = [];
     protected $relations = [];
+    protected $configurations = [];
 
     public static function make(string $setType = '', string $alias = '')
     {
@@ -65,5 +66,52 @@ abstract class GenericSchema
     public function getRelations() : array
     {
         return $this->relations;
+    }
+
+    public function getConfigurations() : array
+    {
+        return $this->configurations;
+    }
+
+    public function initConfigurations() : self
+    {
+        return $this;
+    }
+
+    public function initRelations() : self
+    {
+        return $this;
+    }
+
+    protected function addConfiguration(string $name, $configuration) : self
+    {
+        $this->configurations[$name] = $configuration;
+        return $this;
+    }
+
+    protected function addRelation(
+        string $alias,
+        string $schemaClass,
+        array $matchRules,
+        bool $isCollection = true
+    ) : self
+    {
+        $this->relations[$alias] = [
+            'schema' => $schemaClass,
+            'match' => $matchRules,
+            'isCollection' => $isCollection
+        ];
+
+        return $this;
+    }
+
+    protected function addCustomFilter(string $name, array $config) : self
+    {
+        if (!isset($this->configurations['custom_filter'])) {
+            $this->configurations['custom_filter'] = [];
+        }
+
+        $this->configurations['custom_filter'][$name] = $config;
+        return $this;
     }
 }

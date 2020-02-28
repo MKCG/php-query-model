@@ -298,7 +298,7 @@ use MKCG\Model\GenericSchema;
 
 class ${classname} extends GenericSchema
 {
-    protected \$tableName = '${database}.${table}';
+    protected \$name = '${database}.${table}';
 CLASS;
 
         if ($entityClass !== null) {

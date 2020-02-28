@@ -5,11 +5,18 @@ require __DIR__ . '/vendor/autoload.php';
 use MKCG\Examples\SocialNetwork\Schema;
 use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\QueryCriteria;
-use MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\QueryEngine;
+use MKCG\Model\DBAL\Drivers;
+use MKCG\Model\DBAL\Drivers\Adapters;
 
-$redisClient = new \Predis\Client(['scheme' => 'tcp', 'host' => 'redisearch', 'port' => 6379]);
+$redisClient = new \Predis\Client([
+    'scheme' => 'tcp',
+    'host' => 'redisearch',
+    'port' => 6379
+]);
+
 $httpClient = new \Guzzle\Http\Client('http://elasticsearch:9200/');
+
 $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
     'user' => 'root',
     'password' => 'root',
@@ -19,19 +26,41 @@ $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
 
 $fixturePath = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 
-// createFakeData($sqlConnection, $fixturePath . DIRECTORY_SEPARATOR);
+createFakeData($sqlConnection, $fixturePath . DIRECTORY_SEPARATOR);
 
-$engine = new \MKCG\Model\DBAL\QueryEngine('mysql');
+$engine = new QueryEngine('mysql');
 $engine->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql');
 $engine->registerDriver(new Drivers\CsvReader($fixturePath), 'csv');
+$engine->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss');
+$engine->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap');
 
 $startedAt = microtime(true);
 
-searchUsers($engine);
-searchOrder($engine);
+searchSitemaps($engine);
+searchPackages($engine);
+// searchUsers($engine);
+// searchOrder($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function searchSitemaps(QueryEngine $engine)
+{
+    $model = Schema\Sitemaps::make();
+
+    foreach ($engine->scroll($model, new QueryCriteria()) as $url) {
+        echo json_encode($url, JSON_PRETTY_PRINT) . "\n\n";
+    }
+}
+
+function searchPackages(QueryEngine $engine)
+{
+    $model = Schema\PackagistRss::make();
+
+    foreach ($engine->scroll($model, new QueryCriteria()) as $channel) {
+        echo json_encode($channel, JSON_PRETTY_PRINT) . "\n\n";
+    }
+}
 
 function searchOrder(QueryEngine $engine)
 {
