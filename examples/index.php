@@ -48,7 +48,7 @@ echo "Took : " . round($took, 3) . "s\n";
 function searchHackerNews(QueryEngine $engine)
 {
     $model = Schema\HackerNewsTopStory::make('default', 'hn')
-        ->with(Schema\HackerNewsStory::make())
+        ->with(Schema\HackerNewsStory::make('homepage'))
     ;
 
     $criteria = (new QueryCriteria())

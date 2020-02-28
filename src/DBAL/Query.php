@@ -2,6 +2,9 @@
 
 namespace MKCG\Model\DBAL;
 
+use MKCG\Model\Model;
+use MKCG\Model\GenericSchema;
+
 class Query
 {
     public $name = '';
@@ -17,4 +20,54 @@ class Query
     public $entityClass = '';
     public $countResults = false;
     public $context = [];
+
+    public static function make(Model $model, GenericSchema $schema, array $criteria) : self
+    {
+        $query = new static();
+
+        $query->fields = $schema->getFields($model->getSetType());
+        $query->name = $schema->getFullyQualifiedName();
+        $query->primaryKeys = $schema->getPrimaryKeys();
+        $query->entityClass = $schema->getEntityClass();
+
+        if (isset($criteria['filters'])) {
+            $query->filters = $criteria['filters'];
+        }
+
+        if (isset($criteria['callable_filters'])) {
+            $query->callableFilters = $criteria['callable_filters'];
+        }
+
+        if (isset($criteria['limit'])) {
+            $query->limit = $criteria['limit'];
+        }
+
+        if (isset($criteria['limit_by_parent'])) {
+            $query->limitByParent = $criteria['limit_by_parent'];
+        }
+
+        if (isset($criteria['offset'])) {
+            $query->offset = $criteria['offset'];
+        }
+
+        if (isset($criteria['sort'])) {
+            $query->sort = $criteria['sort'];
+        }
+
+        $query->context = $schema->getConfigurations();
+
+        if (isset($criteria['sub_context_ref'])) {
+            $query->context['parent_ref'] = $criteria['sub_context_ref'];
+        }
+
+        if (isset($criteria['scroll'])) {
+            $query->context['scroll'] = $criteria['scroll'];
+        }
+
+        if (isset($criteria['options'])) {
+            $query->context['options'] = $criteria['options'];
+        }
+
+        return $query;
+    }
 }

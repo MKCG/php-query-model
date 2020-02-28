@@ -67,14 +67,16 @@ class QueryEngine
 
         while (true) {
             $result = $this->doQuery($model, $criteria);
+            $processed = 0;
 
             foreach ($result->getContent() as $item) {
+                $processed++;
                 yield $item;
             }
 
             $criteria[$alias]['offset'] += $criteria[$alias]['limit'];
 
-            if (!empty($criteria[$alias]['scroll']->data['end']) || count($result->getContent()) === 0) {
+            if (!empty($criteria[$alias]['scroll']->data['end']) || $processed === 0) {
                 break;
             }
         }
@@ -109,7 +111,7 @@ class QueryEngine
         }
 
         $alias = $model->getAlias();
-        $query = $this->buildQuery($model, $schema, $criteria[$alias] ?: []);
+        $query = Query::make($model, $schema, $criteria[$alias] ?: []);
 
         try {
             $result = $this->drivers[$driverName]->search($query);
@@ -372,55 +374,5 @@ class QueryEngine
         }
 
         return $filters;
-    }
-
-    private function buildQuery(Model $model, GenericSchema $schema, array $criteria) : Query
-    {
-        $query = new Query();
-
-        $query->fields = $schema->getFields($model->getSetType());
-        $query->name = $schema->getFullyQualifiedName();
-        $query->primaryKeys = $schema->getPrimaryKeys();
-        $query->entityClass = $schema->getEntityClass();
-
-        if (isset($criteria['filters'])) {
-            $query->filters = $criteria['filters'];
-        }
-
-        if (isset($criteria['callable_filters'])) {
-            $query->callableFilters = $criteria['callable_filters'];
-        }
-
-        if (isset($criteria['limit'])) {
-            $query->limit = $criteria['limit'];
-        }
-
-        if (isset($criteria['limit_by_parent'])) {
-            $query->limitByParent = $criteria['limit_by_parent'];
-        }
-
-        if (isset($criteria['offset'])) {
-            $query->offset = $criteria['offset'];
-        }
-
-        if (isset($criteria['sort'])) {
-            $query->sort = $criteria['sort'];
-        }
-
-        $query->context = $schema->getConfigurations();
-
-        if (isset($criteria['sub_context_ref'])) {
-            $query->context['parent_ref'] = $criteria['sub_context_ref'];
-        }
-
-        if (isset($criteria['scroll'])) {
-            $query->context['scroll'] = $criteria['scroll'];
-        }
-
-        if (isset($criteria['options'])) {
-            $query->context['options'] = $criteria['options'];
-        }
-
-        return $query;
     }
 }

@@ -31,6 +31,15 @@ class HackerNewsStory extends GenericSchema
             'parts',
             'descendants'
         ],
+        'homepage' => [
+            'id',
+            'type',
+            'by',
+            'time',
+            'title',
+            'text',
+            'url'
+        ]
     ];
 
     public static function queryUrlGenerator(Query $query)
