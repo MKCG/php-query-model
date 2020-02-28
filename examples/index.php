@@ -16,8 +16,6 @@ $redisClient = new \Predis\Client([
     'port' => 6379
 ]);
 
-$httpClient = new \Guzzle\Http\Client('http://elasticsearch:9200/');
-
 $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
     'user' => 'root',
     'password' => 'root',
@@ -34,16 +32,39 @@ $engine->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql');
 $engine->registerDriver(new Drivers\CsvReader($fixturePath), 'csv');
 $engine->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss');
 $engine->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap');
+$engine->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http');
 
 $startedAt = microtime(true);
 
+searchHackerNews($engine);
 searchSitemaps($engine);
 searchPackages($engine);
-// searchUsers($engine);
-// searchOrder($engine);
+searchUsers($engine);
+searchOrder($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function searchHackerNews(QueryEngine $engine)
+{
+    $model = Schema\HackerNewsTopStory::make('default', 'hn')
+        ->with(Schema\HackerNewsStory::make())
+    ;
+
+    $criteria = (new QueryCriteria())
+        ->forCollection('hn')
+            ->addOption('url', 'https://hacker-news.firebaseio.com/v0/topstories.json')
+            ->addOption('json_formatter', [ Schema\HackerNewsTopStory::class , 'httpJsonFormatter' ])
+            ->setLimit(1)
+        ->forCollection('story')
+            ->addOption('multiple_requests', true)
+            ->addOption('url_generator', [ Schema\HackerNewsStory::class , 'queryUrlGenerator' ])
+        ;
+
+    foreach ($engine->scroll($model, $criteria) as $story) {
+        echo json_encode($story, JSON_PRETTY_PRINT) . "\n\n";
+    }
+}
 
 function searchSitemaps(QueryEngine $engine)
 {

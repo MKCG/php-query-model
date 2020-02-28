@@ -28,6 +28,10 @@ class Guzzle implements HttpClientInterface
 
         $response = $client->send($request);
 
-        return new HttpResponse($response->getStatusCode(), (string) $response->getBody());
+        return new HttpResponse(
+            $response->getStatusCode(),
+            $response->getContentType(),
+            (string) $response->getBody()
+        );
     }
 }

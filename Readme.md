@@ -133,10 +133,12 @@ Backlog
 | Feature                   | Description                                                                        |
 | ------------------------- | ---------------------------------------------------------------------------------- |
 | Async HTTP requests       | Perform non-blocking HTTP requests                                                 |
+| Lazy requests             | Only perform requests when the content is manipulated                              |
 | Cacheable requests        | Cache results and detect what to invalidate using surrogate keys                   |
 | Content synchronizer      | Use streamed eventlog to synchronize content between each datasource               |
 | Error handling strategies | Allow to apply different strategy in case of a failure : crash, retry, fallback... |
 | Generate schema classes   | Generate Schema classes by analyzing each database schema                          |
+| Content lifecycle         | Allow to create / update / delete content                                          |
 
 
 Drivers "nice to have"
@@ -155,6 +157,12 @@ Database Drivers
 * ScyllaDB
 * Solr
 
+Streaming
+=========
+* Kafka
+* MySQL binlog
+* RabbitMQ
+
 Storage
 =======
 * AWS S3
@@ -170,6 +178,12 @@ Service
 =======
 * Cloudinary
 * Sendinblue
+
+Social Network
+==============
+* Facebook
+* LinkedIn
+* Twitter
 
 # Contribution
 
