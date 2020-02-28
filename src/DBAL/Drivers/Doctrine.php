@@ -235,6 +235,10 @@ class Doctrine implements DriverInterface
             }
         }
 
+        foreach ($query->callableFilters as $filter) {
+            call_user_func($filter, $query, $queryBuilder);
+        }
+
         return $this;
     }
 

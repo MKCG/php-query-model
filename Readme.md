@@ -22,21 +22,21 @@ Simple multi-database library to search content on different engines and aggrega
 Features supported by driver
 ----------------------------
 
-| Driver            | Scrollable | Filterable | Sortable | Aggregatable |
-| ----------------- | ---------- | ---------- | -------- | ------------ |
-| Doctrine          | YES        | YES        | YES      | WIP          |
-| CsvReader         | YES        | YES        | NO       | YES          |
-| RssReader         | YES        | YES        | NO       | NO           |
-| SitemapReader     | YES        | YES        | NO       | NO           |
-| Elasticsearch     | YES        | YES        | YES      | WIP          |
-| Redisearch        | YES        | WIP        | WIP      | WIP          |
-| MongoDB           | YES        | WIP        | WIP      | WIP          |
-| Algolia           | YES        | WIP        | WIP      | NO           |
-| Redis             | YES        | WIP        | YES      | NO           |
-| ScyllaDB          | YES        | WIP        | WIP      |              |
-| Cassandra         | YES        | WIP        | WIP      |              |
-| Solr              | YES        | WIP        | WIP      | WIP          |
-| PostgreSQL        | YES        | WIP        | WIP      | WIP          |
+| Driver            | Scrollable | Filterable | Sortable | Aggregatable | Count |
+| ----------------- | ---------- | ---------- | -------- | ------------ | ----- |
+| Doctrine          | YES        | YES        | YES      | WIP          | YES   |
+| CsvReader         | YES        | YES        | NO       | YES          | YES   |
+| RssReader         | YES        | YES        | NO       | NO           | NO    |
+| SitemapReader     | YES        | YES        | NO       | NO           | NO    |
+| Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
+| Redisearch        | YES        | WIP        | WIP      | WIP          | WIP   |
+| MongoDB           | YES        | WIP        | WIP      | WIP          | WIP   |
+| Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
+| Redis             | YES        | WIP        | NO       | NO           | NO    |
+| ScyllaDB          | YES        | WIP        | WIP      |              | WIP   |
+| Cassandra         | YES        | WIP        | WIP      |              | WIP   |
+| Solr              | YES        | WIP        | WIP      | WIP          | WIP   |
+| PostgreSQL        | YES        | WIP        | WIP      | WIP          | WIP   |
 
 # Filters
 
@@ -59,13 +59,46 @@ Filters supported by driver
 
 | Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           | CUSTOM |
 | ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- | ------ |
-| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" | WIP    |
+| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | WIP    |
 | Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
 | Redisearch    |     |        |     |     |     |     |                                 | WIP    |
-| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" | WIP    |
-| RssReader     | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             | WIP    |
-| SitemapReader | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             | WIP    |
+| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
+| RssReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
+| SitemapReader | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
 
+
+## CUSTOM filter type
+
+
+Custom filters can be applied by providing a `callable` to the `QueryCriteria` instance :
+
+```
+(new QueryCriteria())
+    ->forCollection('order')
+        ->addCallableFilter(function(Query $query, ...$arguments) {
+            // do something
+        })
+```
+
+The first argument of the `callable` SHOULD always be the `Query` instance.
+Other arguments might change depending on the driver.
+
+
+Some `Driver` apply filters on fetched results and expect a `false` return value when the filter does not match. Internaly they apply a `array_filter` on each fetched result before :
+* CsvReader
+* RssReader
+* SitemapReader
+
+
+`callable` arguments by Driver
+------------------------------
+
+| Driver        | First argument         | Second argument                   |
+| ------------- | ---------------------- | --------------------------------- |
+| Doctrine      | \MKCG\Model\DBAL\Query | \Doctrine\DBAL\Query\QueryBuilder |
+| CsvReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
+| RssReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
+| SitemapReader | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
 
 # Example
 

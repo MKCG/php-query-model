@@ -111,6 +111,12 @@ trait ContentFilterTrait
             }
         }
 
+        foreach ($query->callableFilters as $callback) {
+            if (call_user_func($callback, $query, $line) === false) {
+                return false;
+            }
+        }
+
         return true;
     }
 }

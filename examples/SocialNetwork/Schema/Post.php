@@ -27,13 +27,6 @@ class Post extends GenericSchema
         return $this;
     }
 
-    public function initConfigurations() : self
-    {
-        $this->addCustomFilter('complex_public', [Post::class, 'applyPublicFilters']);
-
-        return $this;
-    }
-
     public static function applyPublicFilters(array $args)
     {
 

@@ -104,14 +104,4 @@ abstract class GenericSchema
 
         return $this;
     }
-
-    protected function addCustomFilter(string $name, array $config) : self
-    {
-        if (!isset($this->configurations['custom_filter'])) {
-            $this->configurations['custom_filter'] = [];
-        }
-
-        $this->configurations['custom_filter'][$name] = $config;
-        return $this;
-    }
 }

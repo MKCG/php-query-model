@@ -6,6 +6,7 @@ use MKCG\Examples\SocialNetwork\Schema;
 use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\QueryCriteria;
 use MKCG\Model\DBAL\QueryEngine;
+use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Drivers\Adapters;
 
@@ -87,7 +88,18 @@ function searchOrder(QueryEngine $engine)
             ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 10)
             ->addFilter('vat', FilterInterface::FILTER_IN, [ 10, 20 ])
             ->addFilter('credit_card_type', FilterInterface::FILTER_NOT_IN, ['Visa', 'Visa Retired'])
+            ->addCallableFilter(function(Query $query, array $rawOrder) {
+                return $rawOrder['firstname'] !== $rawOrder['lastname'];
+            })
+            ->addCallableFilter(function(Query $query, array $rawOrder) {
+                return $rawOrder['price'] !== $rawOrder['vat'];
+            })
         ->forCollection('addresses')
+            ->addCallableFilter(function(Query $query, \Doctrine\DBAL\Query\QueryBuilder $queryBuilder) {
+                $queryBuilder->andWhere(
+                    $queryBuilder->expr()->neq('city', 'country')
+                );
+            })
             ->setLimitByParent(3)
         ->forCollection('posts')
             ->setLimitByParent(2)

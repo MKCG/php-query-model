@@ -4,9 +4,12 @@ namespace MKCG\Model\DBAL\Drivers;
 
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\HttpResponse;
+use MKCG\Model\DBAL\Mapper\Xml;
 
 class SitemapReader extends Http
 {
+    use ContentFilterTrait;
+
     protected function makeResultList(Query $query, HttpResponse $response) : array
     {
         if (empty($response->body)) {
@@ -26,8 +29,12 @@ class SitemapReader extends Http
                 continue;
             }
 
-            $elements[] = $this->mapDOMElement($node, $query->fields);
+            $elements[] = Xml::mapDOMElement($node, $query->fields);
         }
+
+        $elements = array_filter($elements, function($item) use ($query) {
+            return $this->matchQuery($item, $query);
+        });
 
         return $elements;
     }

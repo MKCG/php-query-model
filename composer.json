@@ -35,6 +35,7 @@
         "algolia/algoliasearch-client-php": "Needed to use the algolia driver",
         "doctrine/dbal": "Needed to use the doctrine driver",
         "predis/predis": "Needed to use the redis driver",
-        "ethanhann/redisearch-php": "Needed to use the redisearch driver"
+        "ethanhann/redisearch-php": "Needed to use the redisearch driver",
+        "guzzle/guzzle": "Needed to use the Guzzle HTTP adapter"
     }
 }

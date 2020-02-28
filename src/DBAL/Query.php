@@ -6,6 +6,7 @@ class Query
 {
     public $name = '';
     public $filters = [];
+    public $callableFilters = [];
     public $aggregations = [];
     public $sort = [];
     public $offset = 0;

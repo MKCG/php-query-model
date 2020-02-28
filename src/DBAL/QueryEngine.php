@@ -356,6 +356,10 @@ class QueryEngine
             $query->filters = $criteria['filters'];
         }
 
+        if (isset($criteria['callable_filters'])) {
+            $query->callableFilters = $criteria['callable_filters'];
+        }
+
         if (isset($criteria['limit'])) {
             $query->limit = $criteria['limit'];
         }
