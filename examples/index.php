@@ -49,7 +49,9 @@ function searchSitemaps(QueryEngine $engine)
     $model = Schema\Sitemaps::make('default', 'sitemap');
     $criteria = (new QueryCriteria())
         ->forCollection('sitemap')
-            ->addOption('url', 'https://www.sitemaps.org/sitemap.xml');
+            ->addOption('url', 'https://www.sitemaps.org/sitemap.xml')
+            ->addFilter('loc', FilterInterface::FILTER_FULLTEXT_MATCH, 'faq')
+        ;
 
     foreach ($engine->scroll($model, $criteria) as $url) {
         echo json_encode($url, JSON_PRETTY_PRINT) . "\n\n";
@@ -61,7 +63,8 @@ function searchPackages(QueryEngine $engine)
     $model = Schema\Rss::make('default', 'rss');
     $criteria = (new QueryCriteria())
         ->forCollection('rss')
-            ->addOption('url', 'https://packagist.org/feeds/packages.rss');
+            ->addOption('url', 'https://packagist.org/feeds/packages.rss')
+        ;
 
     foreach ($engine->scroll($model, $criteria) as $channel) {
         echo json_encode($channel, JSON_PRETTY_PRINT) . "\n\n";

@@ -12,6 +12,8 @@ use MKCG\Model\DBAL\Drivers\Adapters\HttpClientInterface;
 
 abstract class Http implements DriverInterface
 {
+    use ContentFilterTrait;
+
     private $client;
     private $defaultUrl;
     private $defaultUri;
@@ -45,6 +47,10 @@ abstract class Http implements DriverInterface
         $content = $response->statusCode >= 200 && $response->statusCode < 300
             ? $this->makeResultList($query, $response)
             : [];
+
+        $content = array_filter($content, function($item) use ($query) {
+            return $this->matchQuery($item, $query);
+        });
 
         if (!empty($query->context['scroll'])) {
             $this->updateScrollContext($query->context['scroll']);

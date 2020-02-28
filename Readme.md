@@ -26,8 +26,8 @@ Features supported by driver
 | ----------------- | ---------- | ---------- | -------- | ------------ |
 | Doctrine          | YES        | YES        | YES      | WIP          |
 | CsvReader         | YES        | YES        | NO       | YES          |
-| RssReader         | YES        | WIP        | WIP      | NO           |
-| SitemapReader     | YES        | WIP        | WIP      | NO           |
+| RssReader         | YES        | YES        | NO       | NO           |
+| SitemapReader     | YES        | YES        | NO       | NO           |
 | Elasticsearch     | YES        | YES        | YES      | WIP          |
 | Redisearch        | YES        | WIP        | WIP      | WIP          |
 | MongoDB           | YES        | WIP        | WIP      | WIP          |
@@ -57,14 +57,14 @@ Constants are defined by the interface **MKCG\Model\DBAL\FilterInterface**
 Filters supported by driver
 ---------------------------
 
-| Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           |
-| ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- |
-| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" |
-| Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             |
-| Redisearch    |     |        |     |     |     |     |                                 |
-| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" |
-| RssReader     | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             |
-| SitemapReader | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             |
+| Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           | CUSTOM |
+| ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- | ------ |
+| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" | WIP    |
+| Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
+| Redisearch    |     |        |     |     |     |     |                                 | WIP    |
+| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%<value>%" | WIP    |
+| RssReader     | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             | WIP    |
+| SitemapReader | WIP | WIP    | WIP | WIP | WIP | WIP | WIP                             | WIP    |
 
 
 # Example
