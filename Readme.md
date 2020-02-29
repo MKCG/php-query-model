@@ -5,20 +5,15 @@ Simple multi-database library to search content on different engines and aggrega
 
 # Drivers
 
-* Doctrine (only MySQL and MariaDB are supported)
-* CsvReader
-* RssReader (Partially implemented)
-* SitemapReader (Partially implemented)
-* Elasticsearch (Not tested)
-* Redisearch (WIP)
-* MongoDB (To do)
-* Algolia (To do)
-* Redis (To do)
-* ScyllaDB (TBD)
-* Cassandra (TBD)
-* Solr (TBD)
-* PostgreSQL (TBD)
-
+| Type                | Name          | Description                                                             |
+| ------------------- | ------------- | ----------------------------------------------------------------------- |
+| Relational database | Doctrine      | Doctrine DBAL Adapter (MySQL, MariaDB are supported, other might not)   |
+| Search engine       | Elasticsearch | Supports for Elasticsearch version 5+ (Work in progress)                |
+| Search engine       | Redisearch    | Supports for Redisearch (Work in progress)                              |
+| File reader         | CsvReader     |                                                                         |
+| HTTP                | HTTP          | Interact with remote url (Work in progress)                             |
+| RSS                 | RssReader     | Extract RSS from remote url                                             |
+| Sitemap             | SitemapReader | Extract Sitemap urlset from remote url                                  |
 
 Features supported by driver
 ----------------------------
@@ -133,12 +128,13 @@ docker exec -it php_query_model sh -c "php /home/php-query-model/examples/index.
 Work In progress
 ----------------
 
-| Feature              | Description                             |
-| -------------------- | --------------------------------------- |
-| Elasticsearch Driver |                                         |
-| Redisearch Driver    |                                         |
-| Aggregations         |                                         |
-| Content type         | Define the type of each schema property |
+| Feature              | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| Elasticsearch Driver |                                                             |
+| Redisearch Driver    |                                                             |
+| Aggregations         |                                                             |
+| Content type         | Define the type of each schema property                     |
+| Callable validation  | Validate callable arguments using Reflection and PHP tokens |
 
 Backlog
 -------
