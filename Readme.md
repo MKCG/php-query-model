@@ -45,6 +45,7 @@ Query criteria options
 ----------------------
 
 | Option            | Drivers                          | Description                                                  |
+| ----------------- | -------------------------------- | ------------------------------------------------------------ |
 | url               | HTTP , RssReader , SitemapReader | Define the URL to use to query                               |
 | url_generator     | HTTP , RssReader , SitemapReader | Use a callback to generate the URL to use based on the Query |
 | json_formatter    | HTTP                             | Format JSON response body using a callback                   |
