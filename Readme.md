@@ -11,7 +11,8 @@ Simple multi-database library to search content on different engines and aggrega
 | Search engine       | Elasticsearch | Supports for Elasticsearch version 5+ (Work in progress)                |
 | Search engine       | Redisearch    | Supports for Redisearch (Work in progress)                              |
 | File reader         | CsvReader     |                                                                         |
-| HTTP                | HTTP          | Interact with remote url (Work in progress)                             |
+| HTTP                | Http          | Interact with remote url (Work in progress)                             |
+| HTTP                | HttpRobot     | Parse robots.txt from remote url (Work in progress)                     |
 | RSS                 | RssReader     | Extract RSS from remote url                                             |
 | Sitemap             | SitemapReader | Extract Sitemap urlset from remote url                                  |
 
@@ -22,7 +23,8 @@ Features supported by driver
 | ----------------- | ---------- | ---------- | -------- | ------------ | ----- |
 | Doctrine          | YES        | YES        | YES      | WIP          | YES   |
 | CsvReader         | YES        | YES        | NO       | YES          | YES   |
-| HTTP              | YES        | YES        | NO       | NO           | NO    |
+| Http              | YES        | YES        | NO       | NO           | NO    |
+| HttpRobot         | YES        | NO         | NO       | NO           | NO    |
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
@@ -67,7 +69,8 @@ Filters supported by driver
 
 | Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           | CUSTOM |
 | ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- | ------ |
-| HTTP          | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | WIP    |
+| Htp           | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | WIP    |
+| HttpRobot     | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | NO     |
 | Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
 | Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
 | Redisearch    |     |        |     |     |     |     |                                 | WIP    |

@@ -20,12 +20,17 @@ class SitemapReader extends Http
 
         $dom = \DOMDocument::loadXML($response->body);
 
-        if ($dom->childNodes->count() === 0 || strtolower($dom->childNodes[0]->nodeName) !== 'urlset') {
+        if ($dom->childNodes->count() === 0) {
             return [];
         }
 
+        $isUrlset = strtolower($dom->childNodes[0]->nodeName) === 'urlset';
+        $isSitemapIndex = strtolower($dom->childNodes[0]->nodeName) === 'sitemapindex';
+
         foreach ($dom->childNodes[0]->childNodes as $node) {
-            if (strtolower($node->nodeName) !== 'url') {
+            if ($isUrlset && strtolower($node->nodeName) !== 'url') {
+                continue;
+            } else if ($isSitemapIndex && strtolower($node->nodeName) !== 'sitemap') {
                 continue;
             }
 

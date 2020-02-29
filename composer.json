@@ -24,7 +24,9 @@
         "csv",
         "redisearch",
         "rss",
-        "sitemap"
+        "sitemap",
+        "http",
+        "robots.txt"
     ],
     "license": "GPL-3.0-only",
     "autoload": {

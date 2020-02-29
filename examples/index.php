@@ -33,9 +33,11 @@ $engine->registerDriver(new Drivers\CsvReader($fixturePath), 'csv');
 $engine->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss');
 $engine->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap');
 $engine->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http');
+$engine->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot');
 
 $startedAt = microtime(true);
 
+searchStackOverflowRobot($engine);
 searchHackerNews($engine);
 searchSitemaps($engine);
 searchPackages($engine);
@@ -44,6 +46,19 @@ searchOrder($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function searchStackOverflowRobot(QueryEngine $engine)
+{
+    $model = Schema\HttpRobot::make('default', 'robots.txt');
+    $criteria = (new QueryCriteria())
+        ->forCollection('robots.txt')
+        ->addOption('url', 'https://github.com/robots.txt')
+    ;
+
+    foreach ($engine->scroll($model, $criteria) as $userAgent) {
+        echo json_encode($userAgent, JSON_PRETTY_PRINT) . "\n\n";
+    }
+}
 
 function searchHackerNews(QueryEngine $engine)
 {
