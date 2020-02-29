@@ -27,6 +27,7 @@ Features supported by driver
 | ----------------- | ---------- | ---------- | -------- | ------------ | ----- |
 | Doctrine          | YES        | YES        | YES      | WIP          | YES   |
 | CsvReader         | YES        | YES        | NO       | YES          | YES   |
+| HTTP              | YES        | YES        | NO       | NO           | NO    |
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
@@ -38,6 +39,16 @@ Features supported by driver
 | Cassandra         | YES        | WIP        | WIP      |              | WIP   |
 | Solr              | YES        | WIP        | WIP      | WIP          | WIP   |
 | PostgreSQL        | YES        | WIP        | WIP      | WIP          | WIP   |
+
+
+Query criteria options
+----------------------
+
+| Option            | Drivers                          | Description                                                  |
+| url               | HTTP , RssReader , SitemapReader | Define the URL to use to query                               |
+| url_generator     | HTTP , RssReader , SitemapReader | Use a callback to generate the URL to use based on the Query |
+| json_formatter    | HTTP                             | Format JSON response body using a callback                   |
+| multiple_requests | all                              | Disable sub-requests batching when including sub-models      |
 
 # Filters
 
@@ -60,7 +71,8 @@ Filters supported by driver
 
 | Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           | CUSTOM |
 | ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- | ------ |
-| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | WIP    |
+| HTTP          | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | WIP    |
+| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
 | Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
 | Redisearch    |     |        |     |     |     |     |                                 | WIP    |
 | CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
