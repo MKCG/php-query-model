@@ -2,15 +2,102 @@
 
 Simple multi-database library to search content on different engines and aggregate those results into document-oriented structures.
 
+# Engine
+
+The library define the class `MKCG\Model\DBAL\QueryEngine` to build documents using different `Drivers`.
+
+## API
+
+The `QueryEngine` API define two methods : `query()` and `scroll()`.
+
+Each one can fetch and build documents using the provided `\MKCG\Model\Model` with the appropriate `\MKCG\Model\DBAL\QueryCriteria`.
+However, the `scroll()` method return a `\Generator` and internally performs multiple batches to efficiently scroll big collections.
+
+Examples
+--------
+
+```php
+$model = Schema\User::make('default', 'user')
+    ->with(Schema\Address::make())
+    ->with(Schema\Post::make());
+
+$criteria = (new QueryCriteria())
+    ->forCollection('user')
+        ->addFilter('status', FilterInterface::FILTER_IN, [ 2 , 3 , 5 , 7 ])
+        ->addFilter('registered_at', FilterInterface::FILTER_GREATER_THAN_EQUAL, '2000-01-01')
+        ->addSort('firstname', 'ASC')
+        ->addSort('lastname', 'ASC')
+        ->setLimit(10)
+    ->forCollection('addresses')
+        ->setLimitByParent(2)
+    ->forCollection('posts')
+        ->addFilter('title', FilterInterface::FILTER_FULLTEXT_MATCH, 'ab')
+;
+
+$users = $engine->query($model, $criteria);
+
+echo json_encode($users->getContent(), JSON_PRETTY_PRINT) . "\n";
+echo "\nFound : " . $users->getCount() . " users\n";
+
+
+$iterator = $engine->scroll($model, $criteria);
+
+foreach ($iterator as $user) {
+    echo json_encode($user, JSON_PRETTY_PRINT) . "\n";
+}
+
+```
+
+## Drivers definition
+
+Each `Driver` is responsible to perform queries on a single `datasource` (database, HTTP API, local files, ...) and must :
+* implements the `MKCG\Model\DBAL\Drivers\DriverInterface`
+* registered inside the `QueryEngine`
+
+
+Example
+-------
+
+```php
+use MKCG\Model\DBAL\QueryEngine;
+use MKCG\Model\DBAL\Drivers;
+
+$mongoClient = new MongoDB\Client('mongodb://root:password@mongodb');
+
+$redisClient = new \Predis\Client([
+    'scheme' => 'tcp',
+    'host' => 'redisearch',
+    'port' => 6379
+]);
+
+$sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
+    'user' => 'root',
+    'password' => 'root',
+    'host' => 'mysql',
+    'driver' => 'pdo_mysql',
+]);
+
+$engine = (new QueryEngine('mysql'))
+    ->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql')
+    ->registerDriver(new Drivers\CsvReader($fixturePath), 'csv')
+    ->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss')
+    ->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap')
+    ->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http')
+    ->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot')
+    ->registerDriver(new Drivers\MongoDB($mongoClient), 'mongodb')
+```
+
+## Runtime behaviors
+
 
 # Drivers
 
 | Type                       | Name          | Description                                                             |
 | -------------------------- | ------------- | ----------------------------------------------------------------------- |
-| Document-oriented database | MongoDB       | Supports for MongoDB 3.6+                                               |
+| Document-oriented database | MongoDB       | Driver for MongoDB 3.6+                                                 |
 | Relational database        | Doctrine      | Doctrine DBAL Adapter (MySQL, MariaDB are supported, other might not)   |
-| Search engine              | Elasticsearch | Supports for Elasticsearch version 5+ (Work in progress)                |
-| Search engine              | Redisearch    | Supports for Redisearch (Work in progress)                              |
+| Search engine              | Elasticsearch | Driver for Elasticsearch 5+ (Work in progress)                          |
+| Search engine              | Redisearch    | Driver for Redisearch (Work in progress)                                |
 | File reader                | CsvReader     |                                                                         |
 | HTTP                       | Http          | Interact with remote url (Work in progress)                             |
 | HTTP                       | HttpRobot     | Parse robots.txt from remote url (Work in progress)                     |
@@ -109,7 +196,7 @@ Filters supported by driver
 
 Custom filters can be applied by providing a `callable` to the `QueryCriteria` instance :
 
-```
+```php
 (new QueryCriteria())
     ->forCollection('order')
         ->addCallableFilter(function(Query $query, ...$arguments) {
@@ -138,13 +225,14 @@ Some `Driver` apply filters on fetched results and expect a `false` return value
 | SitemapReader | \MKCG\Model\DBAL\Query | `array` representing a raw item                                                           |
 | MongoDB       | \MKCG\Model\DBAL\Quert | `array` representing the filters passed as first argument of `\MongoDB\Collection::find()`|
 
+
 # Example
 
 A fully functionnal example is located in **examples/SocialNetwork**
 
 From : ./examples
 
-```
+```bash
 docker-compose up --build -d
 docker exec -it php_query_model sh -c "cd /home/php-query-model/examples && composer install"
 docker exec -it php_query_model sh -c "php /home/php-query-model/examples/index.php"
