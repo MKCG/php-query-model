@@ -104,4 +104,21 @@ abstract class GenericSchema
 
         return $this;
     }
+
+    protected function addRelationResolver(
+        string $alias,
+        string $schemaClass,
+        callable $matcher,
+        callable $resolver,
+        bool $isCollection = true
+    ) : self {
+        $this->relations[$alias] = [
+            'schema' => $schemaClass,
+            'match_callback' => $matcher,
+            'resolve_callback' => $resolver,
+            'isCollection' => $isCollection
+        ];
+
+        return $this;
+    }
 }

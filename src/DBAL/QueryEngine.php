@@ -180,40 +180,20 @@ class QueryEngine
         $relations = $schema->getRelations();
 
         foreach ($included as $subModel) {
-            $subSchemaClass = $subModel->getFromClass();
-            $matches = array_filter($relations, function($relation) use ($subSchemaClass) {
-                return ($relation['schema'] ?? '') === $subSchemaClass;
-            });
+            $relation = $this->selectRelation($subModel, $relations);
 
-            $count = count($matches);
-            $relation = [];
+            if (empty($relation)) {
+                continue;
+            }
+
+            $filter = $this->makeRelationFilter($result, $relation);
+
+            if ($filter === null) {
+                // @tbd : Inject default value instead ?
+                continue;
+            }
+
             $alias = $subModel->getAlias();
-
-            if ($count === 0) {
-                // @tbd : Inject default value instead ?
-                continue;
-            } else if ($count > 1) {
-                if (isset($matches[$alias])) {
-                    $relation = $matches[$alias];
-                } else {
-                    // @tbd : Inject default value instead ?
-                    continue;
-                }
-            } else {
-                if ($alias === '') {
-                    $alias = key($matches);
-                    $subModel->setAlias($alias);
-                }
-
-                $relation = array_pop($matches);
-            }
-
-            if (empty($relation['match'])) {
-                // @tbd : Inject default value instead ?
-                continue;
-            }
-
-            $filter = $this->makeRelationFilter($result, $relation['match']);
             $firstKey = key($filter);
 
             if ($firstKey !== 0) {
@@ -239,7 +219,7 @@ class QueryEngine
                         $filterIn
                     );
 
-                    if ($subCriteria['alias'][$filters]['firstKey'][FilterInterface::FILTER_IN] === []) {
+                    if ($subCriteria['alias'][$filters][$firstKey][FilterInterface::FILTER_IN] === []) {
                         continue;
                     }
 
@@ -326,51 +306,70 @@ class QueryEngine
 
     private function injectIncluded(string $alias, Result $parents, Result $children, array $relation)
     {
-        $matchRules = $relation['match'] ?: [];
+        $injectAsCollection = isset($relation['isCollection'])
+            ? filter_var($relation['isCollection'], FILTER_VALIDATE_BOOLEAN)
+            : $this->injectAsCollectionByDefault;
 
-        if (count($matchRules) === 1) {
-            $from = key($matchRules);
-            $to = current($matchRules);
-
-            $mapFromParent = [];
-
-            foreach ($parents->getContent() as $parentItem) {
-                if (!isset($mapFromParent[$parentItem[$from]])) {
-                    $mapFromParent[$parentItem[$from]] = [];
-                }
-
-                $mapFromParent[$parentItem[$from]][] = $parentItem;
-            }
-
-            $mapItemByParent = [];
-
-            foreach ($children->getContent() as $childItem) {
-                if (!isset($mapItemByParent[$childItem[$to]])) {
-                    $mapItemByParent[$childItem[$to]] = [];
-                }
-
-                $mapItemByParent[$childItem[$to]][] = $childItem;
-            }
-
-            $injectAsCollection = isset($relation['isCollection'])
-                ? filter_var($relation['isCollection'], FILTER_VALIDATE_BOOLEAN)
-                : $this->injectAsCollectionByDefault;
-
-            foreach ($mapItemByParent as $parentKey => $toInject) {
-                if (isset($mapFromParent[$parentKey])) {
-                    foreach ($mapFromParent[$parentKey] as $parentItem) {
-                        $parentItem[$alias] = $injectAsCollection
-                            ? $toInject
-                            : $toInject[0];
-                    }
-                }
-            }
-        } else {
-            // @todo : Supports relations using many fields
+        if (isset($relation['match']) && count($relation['match']) === 1) {
+            $from = key($relation['match']);
+            $to = current($relation['match']);
+            $this->injectIncludedByRuleFromTo($alias, $parents, $children, $from, $to, $injectAsCollection);
+        } else if (isset($relation['resolve_callback'])) {
+            call_user_func($relation['resolve_callback'], $parents, $children, $injectAsCollection, $alias);
         }
     }
 
-    private function makeRelationFilter(Result $result, array $matchRules)
+    private function injectIncludedByRuleFromTo(
+        string $alias,
+        Result $parents,
+        Result $children,
+        string $from,
+        string $to,
+        bool $isCollection
+    ) {
+        $mapFromParent = [];
+
+        foreach ($parents->getContent() as $parentItem) {
+            if (!isset($mapFromParent[$parentItem[$from]])) {
+                $mapFromParent[$parentItem[$from]] = [];
+            }
+
+            $mapFromParent[$parentItem[$from]][] = $parentItem;
+        }
+
+        $mapItemByParent = [];
+
+        foreach ($children->getContent() as $childItem) {
+            if (!isset($mapItemByParent[$childItem[$to]])) {
+                $mapItemByParent[$childItem[$to]] = [];
+            }
+
+            $mapItemByParent[$childItem[$to]][] = $childItem;
+        }
+
+        foreach ($mapItemByParent as $parentKey => $toInject) {
+            if (isset($mapFromParent[$parentKey])) {
+                foreach ($mapFromParent[$parentKey] as $parentItem) {
+                    $parentItem[$alias] = $isCollection
+                        ? $toInject
+                        : $toInject[0];
+                }
+            }
+        }
+    }
+
+    private function makeRelationFilter(Result $result, array $relation)
+    {
+        if (!empty($relation['match'])) {
+            return $this->makeRelationFilterByRuleFromTo($result, $relation['match']);
+        } else if (!empty($relation['match_callback'])) {
+            return call_user_func($relation['match_callback'], $result);
+        }
+
+        return null;
+    }
+
+    private function makeRelationFilterByRuleFromTo(Result $result, array $matchRules)
     {
         $filters = [];
 
@@ -397,5 +396,38 @@ class QueryEngine
         }
 
         return $filters;
+    }
+
+    private function selectRelation(Model $model, array $relations) : array
+    {
+        $schemaClassName = $model->getFromClass();
+
+        $matches = array_filter($relations, function($relation) use ($schemaClassName) {
+            return ($relation['schema'] ?? '') === $schemaClassName;
+        });
+
+        $count = count($matches);
+
+        if ($count === 0) {
+            return [];
+        }
+
+        $relation = [];
+        $alias = $model->getAlias();
+
+        if ($count > 1) {
+            if (isset($matches[$alias])) {
+                return $relation = $matches[$alias];
+            } else {
+                return [];
+            }
+        }
+
+        if ($alias === '') {
+            $alias = key($matches);
+            $model->setAlias($alias);
+        }
+
+        return array_pop($matches);
     }
 }

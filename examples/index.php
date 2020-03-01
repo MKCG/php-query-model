@@ -152,6 +152,7 @@ function searchPackages(QueryEngine $engine)
 function searchOrder(QueryEngine $engine)
 {
     $model = Schema\Order::make('default', 'order')
+        ->with(Schema\Product::make())
         ->with(Schema\User::make()
             ->with(Schema\Address::make())
             ->with(Schema\Post::make())
