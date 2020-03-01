@@ -18,7 +18,7 @@ class CsvReader implements DriverInterface
 
     public function getSupportedOptions() : array
     {
-        return ['filepath'];
+        return ['filepath', 'case_sensitive'];
     }
 
     public function search(Query $query) : Result

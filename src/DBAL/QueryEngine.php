@@ -17,6 +17,10 @@ class QueryEngine
     private $injectAsCollectionByDefault;
     private $behavior;
 
+    private $optionDefaultValues = [
+        'case_sensitive' => true
+    ];
+
     public function __construct(
         string $defaultDriverName = '',
         bool $injectAsCollectionByDefault = true,
@@ -106,11 +110,13 @@ class QueryEngine
             } else {
                 $alias = $model->getAlias();
                 $options = isset($criteria[$alias]['options'])
-                    ? array_intersect_key(
-                        $criteria[$alias]['options'],
-                        array_fill_keys($this->drivers[$driverName]->getSupportedOptions(), null)
-                    )
+                    ? $criteria[$alias]['options']
                     : [];
+
+                $options = array_intersect_key(
+                    $options + $this->optionDefaultValues,
+                    array_fill_keys($this->drivers[$driverName]->getSupportedOptions(), null)
+                );
 
                 $query = Query::make($model, $schema, ['options' => $options] + ($criteria[$alias] ?: []));
                 $result = $this->behavior->search($model, $query, $this->drivers[$driverName]);

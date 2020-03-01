@@ -9,6 +9,8 @@ class ContentFilter
 {
     public static function matchQuery(array $line, Query $query) : bool
     {
+        $isCaseSensitive = !empty($query->context['options']['case_sensitive']);
+
         foreach ($query->filters as $field => $filters) {
             foreach ($filters as $type => $value) {
                 switch ($type) {
@@ -98,7 +100,18 @@ class ContentFilter
                         break;
 
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
-                        if (!is_string($line[$field]) || mb_strpos($line[$field], $value) === false) {
+                        if (!is_string($line[$field])) {
+                            return false;
+                        }
+
+                        $text = $line[$field];
+
+                        if (!$isCaseSensitive) {
+                            $text = mb_strtolower($text);
+                            $value = mb_strtolower($value);
+                        }
+
+                        if (mb_strpos($text, $value) === false) {
                             return false;
                         }
 

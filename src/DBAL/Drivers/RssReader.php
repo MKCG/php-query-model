@@ -9,6 +9,11 @@ use MKCG\Model\DBAL\Filters\ContentFilter;
 
 class RssReader extends Http
 {
+    public function getSupportedOptions() : array
+    {
+        return array_merge(parent::getSupportedOptions(), ['case_sensitive']);
+    }
+
     protected function makeResultList(Query $query, HttpResponse $response) : array
     {
         if (empty($response->body)) {
