@@ -17,6 +17,11 @@ class Redisearch implements DriverInterface
         $this->client = $client;
     }
 
+    public function getSupportedOptions() : array
+    {
+        return [];
+    }
+
     public function search(Query $query) : Result
     {
         $queryBuilder = (new Builder($this->client, $query->name))

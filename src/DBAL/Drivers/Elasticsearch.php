@@ -20,6 +20,11 @@ abstract class Elasticsearch implements DriverInterface
         $this->terminateAfter = $terminateAfter;
     }
 
+    public function getSupportedOptions() : array
+    {
+        return [];
+    }
+
     abstract protected function makeHttpRequest(string $collection, array $payload) : RequestInterface;
 
     public function search(Query $query) : Result

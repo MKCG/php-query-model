@@ -5,11 +5,10 @@ namespace MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\Filters\ContentFilter;
 
 class CsvReader implements DriverInterface
 {
-    use ContentFilterTrait;
-
     private $path;
 
     public function __construct(string $path = '')
@@ -17,6 +16,11 @@ class CsvReader implements DriverInterface
         $this->path = $path === ''
             ? $path
             : $path . DIRECTORY_SEPARATOR;
+    }
+
+    public function getSupportedOptions() : array
+    {
+        return [];
     }
 
     public function search(Query $query) : Result
@@ -79,7 +83,7 @@ class CsvReader implements DriverInterface
 
                 $line = array_combine($header, $line);
 
-                if ($this->matchQuery($line, $query)) {
+                if (ContentFilter::matchQuery($line, $query)) {
                     $results[] = $line;
                     $found++;
                 }
@@ -94,7 +98,7 @@ class CsvReader implements DriverInterface
 
                 $line = array_combine($header, $line);
 
-                if ($this->matchQuery($line, $query)) {
+                if (ContentFilter::matchQuery($line, $query)) {
                     if ($found >= $query->offset && $found < $query->offset + $query->limit) {
                         $results[] = $line;
                     }

@@ -39,6 +39,19 @@ class Http implements DriverInterface
         $this->defaultOptions = $defaultOptions;
     }
 
+    public function getSupportedOptions() : array
+    {
+        return [
+            'json_formatter',
+            'url',
+            'uri',
+            'url_generator',
+            'method',
+            'headers',
+            'options',
+        ];
+    }
+
     public function search(Query $query) : Result
     {
         $content = [];

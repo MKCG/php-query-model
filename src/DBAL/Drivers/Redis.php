@@ -7,6 +7,11 @@ use MKCG\Model\DBAL\Result;
 
 class Redis implements DriverInterface
 {
+    public function getSupportedOptions() : array
+    {
+        return [];
+    }
+
     public function search(Query $query) : Result
     {
         return Result::make([], '');

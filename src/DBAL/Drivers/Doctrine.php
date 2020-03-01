@@ -21,6 +21,11 @@ class Doctrine implements DriverInterface
         $this->reservedWords = $reservedWords;
     }
 
+    public function getSupportedOptions() : array
+    {
+        return [];
+    }
+
     public function search(Query $query) : Result
     {
         if (empty($query->name)) {

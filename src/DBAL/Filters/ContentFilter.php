@@ -1,13 +1,13 @@
 <?php
 
-namespace MKCG\Model\DBAL\Drivers;
+namespace MKCG\Model\DBAL\Filters;
 
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\FilterInterface;
 
-trait ContentFilterTrait
+class ContentFilter
 {
-    private function matchQuery(array $line, Query $query) : bool
+    public static function matchQuery(array $line, Query $query) : bool
     {
         foreach ($query->filters as $field => $filters) {
             foreach ($filters as $type => $value) {
