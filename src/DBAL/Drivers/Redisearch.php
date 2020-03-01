@@ -4,6 +4,7 @@ namespace MKCG\Model\DBAL\Drivers;
 
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Ehann\RediSearch\Query\Builder;
@@ -22,7 +23,7 @@ class Redisearch implements DriverInterface
         return [];
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         $queryBuilder = (new Builder($this->client, $query->name))
             ->return($query->fields);
@@ -38,7 +39,7 @@ class Redisearch implements DriverInterface
         }
 
         $redisResult = $queryBuilder->search('', true);
-        $result = Result::make($redisResult->getDocuments(), $query->entityClass);
+        $result = $resultBuilder->build($redisResult->getDocuments(), $query);
         $result->setCount($redisResult->getCount());
 
         return $result;

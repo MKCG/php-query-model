@@ -5,6 +5,7 @@ namespace MKCG\Model\DBAL\Drivers;
 use MKCG\Model\Configurations;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 use MKCG\Model\DBAL\HttpRequest;
 use MKCG\Model\DBAL\HttpResponse;
 use MKCG\Model\DBAL\ScrollContext;
@@ -53,7 +54,7 @@ class Http implements DriverInterface
         ];
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         $content = [];
 
@@ -86,7 +87,7 @@ class Http implements DriverInterface
             }
         }
 
-        return Result::make($content, $query->entityClass);
+        return $resultBuilder->build($content, $query);
     }
 
     protected function makeRequestBody(Query $query)

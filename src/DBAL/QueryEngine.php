@@ -16,6 +16,7 @@ class QueryEngine
     private $defaultDriverName;
     private $injectAsCollectionByDefault;
     private $behavior;
+    private $resultBuilder;
 
     private $optionDefaultValues = [
         'case_sensitive' => true,
@@ -26,11 +27,13 @@ class QueryEngine
     public function __construct(
         string $defaultDriverName = '',
         bool $injectAsCollectionByDefault = true,
-        BehaviorInterface $behavior = null
+        BehaviorInterface $behavior = null,
+        ResultBuilderInterface $resultBuilder = null
     ) {
         $this->defaultDriverName = $defaultDriverName;
         $this->injectAsCollectionByDefault = $injectAsCollectionByDefault;
-        $this->behavior = $behavior ?? new BehaviorNoCrash();
+        $this->resultBuilder = $resultBuilder ?? new ResultBuilder();
+        $this->behavior = $behavior ?? new BehaviorNoCrash($this->resultBuilder);
     }
 
     public function registerDriver(DriverInterface $driver, string $name, bool $isDefault = false)
@@ -102,7 +105,7 @@ class QueryEngine
 
     private function doQuery(Model $model, array $criteria, bool $includeSubModels = true) : Result
     {
-        $result = Result::make([], '');
+        $result = null;
 
         if (empty($this->drivers)) {
             $result = $this->behavior->noDriver($model);

@@ -4,6 +4,7 @@ namespace MKCG\Model\DBAL\Drivers;
 
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 
 class Algolia implements DriverInterface
 {
@@ -12,8 +13,8 @@ class Algolia implements DriverInterface
         return [];
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
-        return Result::make([], '');
+        return $resultBuilder->build([], $query);
     }
 }

@@ -7,6 +7,7 @@ use ArrayObject;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 
 use MongoDB\Client;
 use MongoDB\Collection;
@@ -62,7 +63,7 @@ class MongoDB implements DriverInterface
         return $map;
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         $isScroll = !empty($query->context['scroll']);
 
@@ -80,7 +81,7 @@ class MongoDB implements DriverInterface
             $collection->find($filters, $criteria)->toArray()
         );
 
-        $results = Result::make($items, $query->entityClass);
+        $results = $resultBuilder->build($items, $query);
 
         $count = $isScroll && isset($query->context['scroll']->data['count'])
             ? $query->context['scroll']->data['count']

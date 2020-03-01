@@ -5,6 +5,7 @@ namespace MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\FetchMode;
@@ -26,7 +27,7 @@ class Doctrine implements DriverInterface
         return [];
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         if (empty($query->name)) {
             throw new \LogicException("Table must be defined");
@@ -52,7 +53,7 @@ class Doctrine implements DriverInterface
             );
 
             if (empty($ids)) {
-                return Result::make([]);
+                return $resultBuilder->build([], $query);
             }
 
             $this->applyFilterIn($queryBuilder, current($query->primaryKeys), $ids);
@@ -67,8 +68,7 @@ class Doctrine implements DriverInterface
         }
 
         $content = $queryBuilder->execute()->fetchAll();
-
-        $result = Result::make($content, $query->entityClass);
+        $result = $resultBuilder->build($content, $query);
 
         if ($query->countResults || true) {
             $count = $this->count(clone $queryBuilder);

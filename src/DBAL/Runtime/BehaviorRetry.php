@@ -5,6 +5,7 @@ namespace MKCG\Model\DBAL\Runtime;
 use MKCG\Model\Model;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 use MKCG\Model\DBAL\Drivers\DriverInterface;
 
 class BehaviorRetry implements BehaviorInterface
@@ -26,13 +27,13 @@ class BehaviorRetry implements BehaviorInterface
         throw new \Exception("Unknown Driver : " . $driverName);
     }
 
-    public function search(Model $model, Query $query, DriverInterface $driver) : Result
+    public function search(Model $model, Query $query, DriverInterface $driver, ResultBuilderInterface $resultBuilder) : Result
     {
         $lastException;
 
         for ($i = 0; $i < $this->retry; $i++) {
             try {
-                return $driver->search($query);
+                return $driver->search($query, $resultBuilder);
             } catch (\Exception $e) {
                 $lastException = $e;
             }

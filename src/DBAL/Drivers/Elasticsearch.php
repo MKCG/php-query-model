@@ -4,6 +4,8 @@ namespace MKCG\Model\DBAL\Drivers;
 
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
+
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestInterface;
 
@@ -27,7 +29,7 @@ abstract class Elasticsearch implements DriverInterface
 
     abstract protected function makeHttpRequest(string $collection, array $payload) : RequestInterface;
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         if ($query->limitByParent > 0) {
             // @todo : use Field Collapsing
@@ -60,7 +62,7 @@ abstract class Elasticsearch implements DriverInterface
             return $hit['_source'];
         }, $content['hits'] ?? []);
 
-        $result = Result::make($elements, $query->entityClass);
+        $result = $resultBuilder->build($elements, $query);
 
         if (isset($hit['total'])) {
             if (is_array($hit['total'])) {

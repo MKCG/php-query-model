@@ -6,6 +6,7 @@ use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\Filters\ContentFilter;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 
 class CsvReader implements DriverInterface
 {
@@ -21,7 +22,7 @@ class CsvReader implements DriverInterface
         return ['filepath', 'case_sensitive'];
     }
 
-    public function search(Query $query) : Result
+    public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
         $handler = null;
         $header = [];
@@ -52,7 +53,7 @@ class CsvReader implements DriverInterface
             }, $results);
         }
 
-        return Result::make($results, $query->entityClass);
+        return $resultBuilder->build($results, $query);
     }
 
     private function listResults(Query $query, $handler, array $header) : array

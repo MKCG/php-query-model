@@ -5,6 +5,7 @@ namespace MKCG\Model\DBAL\Runtime;
 use MKCG\Model\Model;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\ResultBuilderInterface;
 use MKCG\Model\DBAL\Drivers\DriverInterface;
 
 class BehaviorComposite implements BehaviorInterface
@@ -33,8 +34,8 @@ class BehaviorComposite implements BehaviorInterface
         return $this->behavior->unknownDriver($model, $driverName);
     }
 
-    public function search(Model $model, Query $query, DriverInterface $driver) : Result
+    public function search(Model $model, Query $query, DriverInterface $driver, ResultBuilderInterface $resultBuilder) : Result
     {
-        return $this->behavior->search($model, $query, $driver);
+        return $this->behavior->search($model, $query, $driver, $resultBuilder);
     }
 }
