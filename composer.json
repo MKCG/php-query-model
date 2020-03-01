@@ -26,7 +26,8 @@
         "rss",
         "sitemap",
         "http",
-        "robots.txt"
+        "robots.txt",
+        "mongodb"
     ],
     "license": "GPL-3.0-only",
     "autoload": {
@@ -43,6 +44,7 @@
         "doctrine/dbal": "Needed to use the doctrine driver",
         "predis/predis": "Needed to use the redis driver",
         "ethanhann/redisearch-php": "Needed to use the redisearch driver",
-        "guzzle/guzzle": "Needed to use the Guzzle HTTP adapter"
+        "guzzle/guzzle": "Needed to use the Guzzle HTTP adapter",
+        "mongodb/mongodb": "Needed to use the Mongodb driver"
     }
 }

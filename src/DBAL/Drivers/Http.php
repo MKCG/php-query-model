@@ -42,6 +42,7 @@ class Http implements DriverInterface
     public function getSupportedOptions() : array
     {
         return [
+            'max_query_time',
             'json_formatter',
             'url',
             'uri',

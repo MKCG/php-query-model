@@ -11,12 +11,12 @@ class BehaviorNoCrash implements BehaviorInterface
 {
     public function noDriver(Model $model) : Result
     {
-        return new Result([], '');
+        return Result::make([], '');
     }
 
     public function unknownDriver(Model $model, string $driverName) : Result
     {
-        return new Result([], '');
+        return Result::make([], '');
     }
 
     public function search(Model $model, Query $query, DriverInterface $driver) : Result
@@ -24,7 +24,7 @@ class BehaviorNoCrash implements BehaviorInterface
         try {
             return $driver->search($query);
         } catch (\Exception $e) {
-            return new Result([], '');
+            return Result::make([], '');
         }
     }
 }

@@ -26,9 +26,4 @@ class Post extends GenericSchema
         $this->addRelation('author', User::class, ['id_user' => 'id'], false);
         return $this;
     }
-
-    public static function applyPublicFilters(array $args)
-    {
-
-    }
 }

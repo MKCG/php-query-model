@@ -9,6 +9,9 @@ use MKCG\Model\DBAL\QueryEngine;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Drivers\Adapters;
+use MKCG\Model\DBAL\CallableOptionValidator;
+
+$mongoClient = new MongoDB\Client('mongodb://root:password@mongodb');
 
 $redisClient = new \Predis\Client([
     'scheme' => 'tcp',
@@ -27,32 +30,71 @@ $fixturePath = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 
 createFakeData($sqlConnection, $fixturePath . DIRECTORY_SEPARATOR);
 
-$engine = new QueryEngine('mysql');
-$engine->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql');
-$engine->registerDriver(new Drivers\CsvReader($fixturePath), 'csv');
-$engine->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss');
-$engine->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap');
-$engine->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http');
-$engine->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot');
+$engine = (new QueryEngine('mysql'))
+    ->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql')
+    ->registerDriver(new Drivers\CsvReader($fixturePath), 'csv')
+    ->registerDriver(new Drivers\RssReader(new Adapters\Guzzle), 'rss')
+    ->registerDriver(new Drivers\SitemapReader(new Adapters\Guzzle), 'sitemap')
+    ->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http')
+    ->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot')
+    ->registerDriver(new Drivers\MongoDB($mongoClient), 'mongodb')
+;
 
 $startedAt = microtime(true);
 
+searchProducts($engine);
 searchStackOverflowRobot($engine);
-searchHackerNews($engine);
 searchSitemaps($engine);
 searchPackages($engine);
 searchUsers($engine);
 searchOrder($engine);
+searchHackerNews($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function searchProducts(QueryEngine $engine)
+{
+    $model = Schema\Product::make('default', 'products');
+
+    $criteria = (new QueryCriteria())
+        ->forCollection('products')
+            ->addFilter('sku.color', FilterInterface::FILTER_IN, ['aqua', 'purple'])
+            ->addFilter('sku.color', FilterInterface::FILTER_NOT_IN, 'black')
+            ->addFilter('name', FilterInterface::FILTER_FULLTEXT_MATCH, 'mr')
+            ->addCallableFilter(function(Query $query, array $filters) {
+                $filters['$text']['$language'] = 'english';
+                $filters['society'] = [
+                    '$nin' => ["Harris and Sons", "Hermann-Schmidt"]
+                ];
+
+                return $filters;
+            })
+            ->addOption('case_sensitive', false)
+            ->addSort('sku.color', 'DESC')
+            ->addSort('name', 'ASC')
+            ->addOption('max_query_time', 100)
+            ->addOption('allow_partial', true)
+            ->setOffset(25)
+            ->setLimit(100)
+    ;
+
+    $found = 0;
+
+    foreach ($engine->scroll($model, $criteria, 30) as $product) {
+        echo json_encode($product, JSON_PRETTY_PRINT) . "\n\n";
+        $found++;
+    }
+
+    echo "Products scrolled : " . $found . "\n\n";
+}
 
 function searchStackOverflowRobot(QueryEngine $engine)
 {
     $model = Schema\HttpRobot::make('default', 'robots.txt');
     $criteria = (new QueryCriteria())
         ->forCollection('robots.txt')
-        ->addOption('url', 'https://github.com/robots.txt')
+            ->addOption('url', 'https://github.com/robots.txt')
     ;
 
     foreach ($engine->scroll($model, $criteria) as $userAgent) {
@@ -185,13 +227,52 @@ function searchUsers(QueryEngine $engine)
     }
 }
 
-function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePath)
+function createFakeData(\Doctrine\DBAL\Connection $connection, \MongoDB\Client $mongo, string $fixturePath)
 {
-    createDatabaseSchema($connection, [ new Schema\User(), new Schema\Address(), new Schema\Post() ]);
-
     $faker = \Faker\Factory::create();
 
-    $csvOrderHandler = fopen($fixturePath . (new Schema\Order())->getFullyQualifiedName(), 'w+');
+    $productCounter = 10000;
+    $products = [];
+
+    $productCollection = $mongo->ecommerce->product;
+    $productCollection->drop();
+
+    $productCollection->createIndex(['sku.color' => 1]);
+    $productCollection->createIndex(['sku.country' => 1]);
+    $productCollection->createIndex(['name' => 'text']);
+
+    for ($i = 1; $i <= $productCounter; $i++) {
+        $product = [
+            '_id' => $i,
+            'name' => $faker->title,
+            'society' => $faker->company,
+            'sku' => array_map(function($i) use ($faker) {
+                return [
+                    'color' => $faker->safeColorName,
+                    'isbn13' => $faker->isbn13,
+                    'country' => $faker->countryCode
+                ];
+            }, range(0, rand(1, 5)))
+        ];
+
+        $products[] = $product;
+
+        if ($i % 500 === 0 && $products !== []) {
+            $productCollection->insertMany($products);
+            echo "Created : ${i}/${productCounter} products\n";
+            $products = [];
+        }
+    }
+
+    if ($products !== []) {
+        echo "Created : ${i}/${productCounter} products\n";
+        $productCollection->insertMany($products);
+        $products = [];
+    }
+
+    createDatabaseSchema($connection, [ new Schema\User(), new Schema\Address(), new Schema\Post() ]);
+
+    $csvOrderHandler = fopen($fixturePath . 'orders.csv', 'w+');
     fputcsv($csvOrderHandler, [
         'id',
         'id_user',
@@ -201,7 +282,8 @@ function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePa
         'credit_card_number',
         'price',
         'vat',
-        'currency'
+        'currency',
+        'product_ids'
     ]);
 
     $userCounter = 0;
@@ -223,6 +305,13 @@ function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePa
         ];
 
         for ($j = 0; $j < 20; $j++) {
+            $productIds = range(0, rand(0, 5));
+            $productIds = array_map(function($i) use ($productCounter) {
+                return rand(1, $productCounter < 1 ? 1 : $productCounter -1);
+            }, $productIds);
+            $productIds = array_unique($productIds);
+            sort($productIds);
+
             fputcsv($csvOrderHandler, [
                 ++$orderCounter,
                 $user['id'],
@@ -232,7 +321,8 @@ function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePa
                 $faker->creditCardNumber,
                 rand(1, 100),
                 [5, 10, 20][rand(0, 2)],
-                $faker->currencyCode
+                $faker->currencyCode,
+                implode(',', $productIds)
             ]);
 
             if (rand(0, 10) < 3) {
@@ -316,14 +406,14 @@ function createFakeData(\Doctrine\DBAL\Connection $connection, string $fixturePa
 
         if ($i % 50 === 0) {
             $connection->exec($statements);
-            echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
+            echo "Created : ${userCounter}/1000 users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
             $statements = '';
         }
     }
 
     if ($statements !== '') {
         $connection->exec($statements);
-        echo "Created : ${userCounter} users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
+        echo "Created : ${userCounter}/1000 users - ${addressCounter} addresses - ${postCounter} posts - ${orderCounter} orders\n";
     }
 
     fclose($csvOrderHandler);

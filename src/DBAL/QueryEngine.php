@@ -18,7 +18,9 @@ class QueryEngine
     private $behavior;
 
     private $optionDefaultValues = [
-        'case_sensitive' => true
+        'case_sensitive' => true,
+        'max_query_time' => 5000,
+        'allow_partial' => false,
     ];
 
     public function __construct(
@@ -42,7 +44,7 @@ class QueryEngine
         return $this;
     }
 
-    public function scroll(Model $model, QueryCriteria $criteria, int $defaultLimit = 10) : \Generator
+    public function scroll(Model $model, QueryCriteria $criteria, int $scrollBatchSize = 10) : \Generator
     {
         $alias = $model->getAlias();
         $criteria = $criteria->toArray();
@@ -55,29 +57,40 @@ class QueryEngine
             $criteria[$alias]['offset'] = 0;
         }
 
-        if (!isset($criteria[$alias]['limit'])) {
-            $criteria[$alias]['limit'] = $defaultLimit;
+        if ($scrollBatchSize <= 0) {
+            throw new \LogicException("Scroll batch size must be > 0 to be able to scroll");
         }
 
-        if ($criteria[$alias]['limit'] <= 0) {
-            throw new \LogicException("Limit must be > 0 to be able to scroll");
-        }
+        $limit = $criteria[$alias]['limit'] ?? null;
+        $criteria[$alias]['limit'] = $scrollBatchSize;
 
         $criteria[$alias]['scroll'] = new ScrollContext();
+        $processed = 0;
 
         while (true) {
+            if ($limit !== null) {
+                if ($limit <= 0) {
+                    break;
+                } else if ($limit < $scrollBatchSize) {
+                    $criteria[$alias]['limit'] = $limit;
+                }
+            }
+
             $result = $this->doQuery($model, $criteria);
-            $processed = 0;
 
             foreach ($result->getContent() as $item) {
                 $processed++;
                 yield $item;
             }
 
-            $criteria[$alias]['offset'] += $criteria[$alias]['limit'];
-
             if (!empty($criteria[$alias]['scroll']->data['end']) || $processed === 0) {
                 break;
+            }
+
+            $criteria[$alias]['offset'] += $scrollBatchSize;
+
+            if ($limit !== null) {
+                $limit -= $scrollBatchSize;
             }
         }
     }
@@ -89,7 +102,7 @@ class QueryEngine
 
     private function doQuery(Model $model, array $criteria, bool $includeSubModels = true) : Result
     {
-        $result = new Result([], '');
+        $result = Result::make([], '');
 
         if (empty($this->drivers)) {
             $result = $this->behavior->noDriver($model);

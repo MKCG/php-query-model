@@ -41,12 +41,35 @@ Features supported by driver
 Query criteria options
 ----------------------
 
-| Option            | Drivers                          | Description                                                  |
-| ----------------- | -------------------------------- | ------------------------------------------------------------ |
-| url               | HTTP , RssReader , SitemapReader | Define the URL to use to query                               |
-| url_generator     | HTTP , RssReader , SitemapReader | Use a callback to generate the URL to use based on the Query |
-| json_formatter    | HTTP                             | Format JSON response body using a callback                   |
-| multiple_requests | all                              | Disable sub-requests batching when including sub-models      |
+HTTP-based drivers :
+* HTTP
+* HttpRobot
+* RssReader
+* SitemapReader
+* Elasticsearch
+
+Result-based filterable drivers :
+* CsvReader
+* RssReader
+* SitemapReader
+
+
+| Option            | Drivers                                  | Description                                                                   |
+| ----------------- | ---------------------------------------- | ----------------------------------------------------------------------------- |
+| case_sensitive    | MongoDB, Result-based filterable drivers | Perform case sensitive `FILTER_FULLTEXT_MATCH` search , default : `false`     |
+| filepath          | CsvReader                                | Absolute or relative filepath of the CSV                                      |
+| json_formatter    | HTTP                                     | Format JSON response body using a callback                                    |
+| multiple_requests | none , used by the QueryEngine           | Disable sub-requests batching when including sub-models                       |
+| url               | HTTP-based drivers                       | Define the URL to use to query                                                |
+| url_generator     | HTTP-based drivers                       | Use a callback to generate the URL to use based on the Query                  |
+| max_query_time    | HTTP-based drivers , MongoDB             | Max query time in milliseconds , default : `5000` (5 seconds)                 |
+| allow_partial     | MongoDB , Elasticsearch                  | Allow partial results to be returned , default : `false`                      |
+| readPreference    | MongoDB                                  | https://docs.mongodb.com/manual/core/read-preference/index.html               |
+| readConcern       | MongoDB                                  | https://docs.mongodb.com/manual/reference/read-concern/index.html             |
+| batchSize         | MongoDB                                  | https://docs.mongodb.com/manual/reference/method/cursor.batchSize/index.html  |
+| diacriticSensitive| MongoDB                                  | https://docs.mongodb.com/manual/reference/operator/query/text/index.html      |
+
+When both `url_generator` and `url` are provided, then only `url_generator` is used.
 
 # Filters
 
@@ -58,7 +81,7 @@ Query criteria options
 | GTE    | FILTER_GREATER_THAN_EQUAL    |                                                  |
 | LT     | FILTER_LESS_THAN             |                                                  |
 | LTE    | FILTER_LESS_THAN_EQUAL       |                                                  |
-| MATCH  | FILTER_FULLTEXT_MATCH        |                                                  |
+| MATCH  | FILTER_FULLTEXT_MATCH        | Text search                                      |
 | CUSTOM | FILTER_CUSTOM                | Allow to use a callable to apply complex filters |
 
 Constants are defined by the interface **MKCG\Model\DBAL\FilterInterface**
@@ -73,6 +96,7 @@ Filters supported by driver
 | HttpRobot     | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | NO     |
 | Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
 | Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
+| MongoDB       | YES | YES    | YES | YES | YES | YES | YES                             | YES    |
 | Redisearch    |     |        |     |     |     |     |                                 | WIP    |
 | CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
 | RssReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |

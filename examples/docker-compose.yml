@@ -25,6 +25,13 @@ services:
     image: redislabs/redisearch:latest
     restart: always
 
+  mongodb:
+    image: mongo:bionic
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=password
+
   php_query_model:
     image: php_query_model
     container_name: php_query_model

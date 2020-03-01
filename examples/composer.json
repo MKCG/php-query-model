@@ -23,6 +23,7 @@
         "ethanhann/redisearch-php": "^1.9",
         "predis/predis": "^1.1",
         "fzaninotto/faker": "^1.9",
-        "guzzle/guzzle": "^3.9"
+        "guzzle/guzzle": "^3.9",
+        "mongodb/mongodb": "^1.6"
     }
 }
