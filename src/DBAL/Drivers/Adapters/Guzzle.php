@@ -17,13 +17,17 @@ class Guzzle implements HttpClientInterface
 
     public function sendRequest(HttpRequest $request) : HttpResponse
     {
+        $options = $request->timeout > 0
+            ? [ 'timeout' => $request->timeout ] + $request->options
+            : $request->options;
+
         $client = $this->client ?: new Client();
         $request = $client->createRequest(
             $request->method,
             $request->url . $request->$uri,
             $request->headers,
             $request->body,
-            $request->options
+            $options
         );
 
         $response = $client->send($request);

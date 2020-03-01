@@ -10,4 +10,5 @@ class HttpRequest
     public $headers;
     public $body;
     public $options;
+    public $timeout;
 }

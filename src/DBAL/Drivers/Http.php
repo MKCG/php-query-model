@@ -161,6 +161,14 @@ class Http implements DriverInterface
         $request->headers = $options['headers'] ?: ($configuration->getHeaders() ?: $this->defaultHeaders);
         $request->options = $options['options'] ?: ($configuration->getOptions() ?: $this->defaultOptions);
 
+        $timeout = filter_var($options['max_query_time'] ?: 0, FILTER_VALIDATE_INT);
+
+        if ($timeout === false || $timeout < 0) {
+            throw new \Exception("Invalid query timeout");
+        }
+
+        $request->timeout = $timeout;
+
         $request->url = !empty($options['url_generator'])
             ? call_user_func($options['url_generator'], $query)
             : ($options['url']

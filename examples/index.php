@@ -95,6 +95,7 @@ function searchStackOverflowRobot(QueryEngine $engine)
     $criteria = (new QueryCriteria())
         ->forCollection('robots.txt')
             ->addOption('url', 'https://github.com/robots.txt')
+            ->addOption('max_query_time', 500)
     ;
 
     foreach ($engine->scroll($model, $criteria) as $userAgent) {
