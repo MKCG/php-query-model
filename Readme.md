@@ -5,16 +5,17 @@ Simple multi-database library to search content on different engines and aggrega
 
 # Drivers
 
-| Type                | Name          | Description                                                             |
-| ------------------- | ------------- | ----------------------------------------------------------------------- |
-| Relational database | Doctrine      | Doctrine DBAL Adapter (MySQL, MariaDB are supported, other might not)   |
-| Search engine       | Elasticsearch | Supports for Elasticsearch version 5+ (Work in progress)                |
-| Search engine       | Redisearch    | Supports for Redisearch (Work in progress)                              |
-| File reader         | CsvReader     |                                                                         |
-| HTTP                | Http          | Interact with remote url (Work in progress)                             |
-| HTTP                | HttpRobot     | Parse robots.txt from remote url (Work in progress)                     |
-| RSS                 | RssReader     | Extract RSS from remote url                                             |
-| Sitemap             | SitemapReader | Extract Sitemap urlset from remote url                                  |
+| Type                       | Name          | Description                                                             |
+| -------------------------- | ------------- | ----------------------------------------------------------------------- |
+| Document-oriented database | MongoDB       | Supports for MongoDB 3.6+                                               |
+| Relational database        | Doctrine      | Doctrine DBAL Adapter (MySQL, MariaDB are supported, other might not)   |
+| Search engine              | Elasticsearch | Supports for Elasticsearch version 5+ (Work in progress)                |
+| Search engine              | Redisearch    | Supports for Redisearch (Work in progress)                              |
+| File reader                | CsvReader     |                                                                         |
+| HTTP                       | Http          | Interact with remote url (Work in progress)                             |
+| HTTP                       | HttpRobot     | Parse robots.txt from remote url (Work in progress)                     |
+| RSS                        | RssReader     | Extract RSS from remote url                                             |
+| Sitemap                    | SitemapReader | Extract Sitemap urlset from remote url                                  |
 
 Features supported by driver
 ----------------------------
@@ -29,7 +30,7 @@ Features supported by driver
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
 | Redisearch        | YES        | WIP        | WIP      | WIP          | WIP   |
-| MongoDB           | YES        | WIP        | WIP      | WIP          | WIP   |
+| MongoDB           | YES        | YES        | YES      | WIP          | YES   |
 | Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
 | Redis             | YES        | WIP        | NO       | NO           | NO    |
 | ScyllaDB          | YES        | WIP        | WIP      |              | WIP   |
@@ -186,7 +187,6 @@ Database Drivers
 * ArangoDB
 * Cassandra
 * \Illuminate\Eloquent (library used by Laravel)
-* MongoDB
 * Neo4J
 * PostgreSQL
 * Redis
