@@ -10,8 +10,8 @@ abstract class GenericSchema
     protected $primaryKeys = [];
     protected $filterableFields = [];
     protected $types = [];
-    protected $relations = [];
-    protected $configurations = [];
+    private $relations = [];
+    private $configurations = [];
 
     public static function make(string $setType = '', string $alias = '')
     {
@@ -92,13 +92,14 @@ abstract class GenericSchema
     protected function addRelation(
         string $alias,
         string $schemaClass,
-        array $matchRules,
+        string $from,
+        string $to,
         bool $isCollection = true
     ) : self
     {
         $this->relations[$alias] = [
             'schema' => $schemaClass,
-            'match' => $matchRules,
+            'match' => [ $from => $to ],
             'isCollection' => $isCollection
         ];
 

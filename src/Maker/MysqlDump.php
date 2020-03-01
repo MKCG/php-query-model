@@ -261,12 +261,8 @@ class MysqlDump
                 ]);
 
                 $relations[$relationHash] = <<<FOREIGN
-        '${relation[0]}_${relation[1]}_${relation[2]}' => [
-            'schema' => ${relationClassName}::class,
-            'match' => [
-                '${field}' => '${relation[2]}'
-            ]
-        ],
+
+        \$this->addRelation('${relation[0]}_${relation[1]}_${relation[2]}', ${relationClassName}::class, '${field}', '${relation[2]}', true);
 FOREIGN;
             }
         }
@@ -335,10 +331,10 @@ CLASS;
         if ($relations !== '') {
             $fileContent .= <<<CLASS
 
-
-    protected \$relations = [
+    public function initRelations() : self
 ${relations}
-    ];
+        return \$this;
+    }
 CLASS;
         }
 

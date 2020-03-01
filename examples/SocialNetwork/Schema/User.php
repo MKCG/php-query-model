@@ -23,20 +23,10 @@ class User extends GenericSchema
         ],
     ];
 
-    protected $relations = [
-        'addresses' => [
-            'schema' => Address::class,
-            'match' => [
-                'id' => 'id_user'
-            ],
-            'isCollection' => true
-        ],
-        'posts' => [
-            'schema' => Post::class,
-            'match' => [
-                'id' => 'id_user'
-            ],
-            'isCollection' => true
-        ],
-    ];
+    public function initRelations() : self
+    {
+        $this->addRelation('addresses', Address::class, 'id', 'id_user', true);
+        $this->addRelation('posts', Post::class, 'id', 'id_user', true);
+        return $this;
+    }
 }

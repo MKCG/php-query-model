@@ -30,7 +30,7 @@ class Order extends GenericSchema
     public function initRelations() : self
     {
         $this
-            ->addRelation('customer', User::class, ['id_user' => 'id'], false)
+            ->addRelation('customer', User::class, 'id_user', 'id', false)
             ->addRelationResolver('products', Product::class, [ static::class , 'extract' ], [ static::class , 'resolve' ], true)
         ;
 

@@ -22,13 +22,9 @@ class Address extends GenericSchema
         ],
     ];
 
-    protected $relations = [
-        'owner' => [
-            'schema' => User::class,
-            'match' => [
-                'id_user' => 'id'
-            ],
-            'isCollection' => false
-        ]
-    ];
+    public function initRelations() : self
+    {
+        $this->addRelation('owner', User::class, 'id_user', 'id', false);
+        return $this;
+    }
 }

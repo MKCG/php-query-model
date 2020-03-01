@@ -23,7 +23,7 @@ class Post extends GenericSchema
 
     public function initRelations() : self
     {
-        $this->addRelation('author', User::class, ['id_user' => 'id'], false);
+        $this->addRelation('author', User::class, 'id_user', 'id', false);
         return $this;
     }
 }
