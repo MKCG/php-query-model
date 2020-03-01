@@ -13,14 +13,12 @@ class CsvReader implements DriverInterface
 
     public function __construct(string $path = '')
     {
-        $this->path = $path === ''
-            ? $path
-            : $path . DIRECTORY_SEPARATOR;
+        $this->path = $path;
     }
 
     public function getSupportedOptions() : array
     {
-        return [];
+        return ['filepath'];
     }
 
     public function search(Query $query) : Result
@@ -30,7 +28,7 @@ class CsvReader implements DriverInterface
 
         if (!empty($query->context['scroll'])) {
             if (empty($query->context['scroll']->data['handler'])) {
-                $query->context['scroll']->data['handler'] = $this->openFile($query->name);
+                $query->context['scroll']->data['handler'] = $this->openFile($query);
             }
 
             $handler = $query->context['scroll']->data['handler'];
@@ -54,7 +52,7 @@ class CsvReader implements DriverInterface
                 $header = $query->context['scroll']->data['header'];
             }
         } else {
-            $handler = $this->openFile($query->name);
+            $handler = $this->openFile($query);
 
             if ($handler === null) {
                 return Result::make([]);
@@ -120,9 +118,23 @@ class CsvReader implements DriverInterface
         return Result::make($results, $query->entityClass);
     }
 
-    protected function openFile(string $name)
+    protected function openFile(Query $query)
     {
-        $filepath = $this->path . $name;
+        if (empty($query->context['options']['filepath']) && $this->path === '') {
+            throw new \Exception("CSV filepath is undefined");
+        }
+
+        $filepath = $query->context['options']['filepath'];
+        $isAbsolute = strpos($filepath, DIRECTORY_SEPARATOR) === 0;
+
+        if (!$isAbsolute && $this->path !== '' && is_dir($this->path)) {
+            $filepath = $this->path . DIRECTORY_SEPARATOR . $filepath;
+        }
+
+        if (!is_file($filepath)) {
+            throw new \Exception("Invalid filepath : " . $filepath);
+        }
+
         $handler = fopen($filepath, 'r');
 
         if ($handler === false || $handler === null) {

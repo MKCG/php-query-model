@@ -119,6 +119,8 @@ function searchOrder(QueryEngine $engine)
 
     $criteria = (new QueryCriteria())
         ->forCollection('order')
+            ->addOption('filepath', __DIR__ . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'orders.csv')
+            ->addOption('filepath', 'orders.csv')
             ->addFilter('firstname', FilterInterface::FILTER_FULLTEXT_MATCH, 'al')
             ->addFilter('price', FilterInterface::FILTER_GREATER_THAN_EQUAL, 15)
             ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 10)

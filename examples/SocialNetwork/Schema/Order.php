@@ -7,7 +7,6 @@ use MKCG\Model\GenericEntity;
 
 class Order extends GenericSchema
 {
-    protected $name = 'orders.csv';
     protected $driverName = 'csv';
     protected $entityClass = GenericEntity::class;
     protected $primaryKeys = ['id'];

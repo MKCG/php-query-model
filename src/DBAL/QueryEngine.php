@@ -105,7 +105,14 @@ class QueryEngine
                 $result = $this->behavior->unknownDriver($model, $driverName);
             } else {
                 $alias = $model->getAlias();
-                $query = Query::make($model, $schema, $criteria[$alias] ?: []);
+                $options = isset($criteria[$alias]['options'])
+                    ? array_intersect_key(
+                        $criteria[$alias]['options'],
+                        array_fill_keys($this->drivers[$driverName]->getSupportedOptions(), null)
+                    )
+                    : [];
+
+                $query = Query::make($model, $schema, ['options' => $options] + ($criteria[$alias] ?: []));
                 $result = $this->behavior->search($model, $query, $this->drivers[$driverName]);
             }
         }
@@ -205,21 +212,16 @@ class QueryEngine
                 foreach ($batchFilterIn as $i => $filterIn) {
                     $subCriteria = $criteria;
 
-                    if (!isset($subCriteria[$alias]['filters'][$firstKey])) {
-                        $subCriteria[$alias]['filters'][$firstKey] = $filterIn;
-                    } else {
-                        $subCriteria[$alias]['filters'][$firstKey] = $this->intersectFiltersIn(
-                            $filterIn,
-                            $subCriteria[$alias]['filters'][$firstKey]
-                        );
+                    !isset($subCriteria[$alias]) && $subCriteria[$alias] = [];
 
-                        $subCriteria[$alias]['filters'][$firstKey][FilterInterface::FILTER_IN] = array_values(
-                            $subCriteria[$alias]['filters'][$firstKey][FilterInterface::FILTER_IN]
-                        );
+                    $subCriteria[$alias]['filters'] = $this->mergeFiltersIn(
+                        $subCriteria[$alias]['filters'] ?? [],
+                        $firstKey,
+                        $filterIn
+                    );
 
-                        if ($subCriteria[$alias]['filters'][$firstKey][FilterInterface::FILTER_IN] === []) {
-                            continue;
-                        }
+                    if ($subCriteria['alias'][$filters]['firstKey'][FilterInterface::FILTER_IN] === []) {
+                        continue;
                     }
 
                     $subCriteria[$alias]['sub_context_ref'] = $firstKey;
@@ -248,6 +250,18 @@ class QueryEngine
             }
         }
 
+    }
+
+    private function mergeFiltersIn(array $filters, string $field, $filterIn)
+    {
+        if (!isset($filters[$field])) {
+            $filters[$field] = $filterIn;
+        } else {
+            $filters[$field] = $this->intersectFiltersIn($filterIn, $filters[$field]);
+            $filters[$field][FilterInterface::FILTER_IN] = array_values($filters[$field][FilterInterface::FILTER_IN]);
+        }
+
+        return $filters;
     }
 
     private function intersectFiltersIn(array $filters, $toPush)
