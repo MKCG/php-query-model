@@ -53,7 +53,9 @@ class CsvReader implements DriverInterface
             }, $results);
         }
 
-        return $resultBuilder->build($results, $query);
+        return $resultBuilder
+            ->build($results, $query)
+            ->setCount($found);
     }
 
     private function listResults(Query $query, $handler, array $header) : array
@@ -115,7 +117,7 @@ class CsvReader implements DriverInterface
 
         $query->context['scroll']->data['found'] = $found;
 
-        return [ $results , $fetched ];
+        return [ $results , $found ];
     }
 
     private function getScrollParams(Query $query) : array

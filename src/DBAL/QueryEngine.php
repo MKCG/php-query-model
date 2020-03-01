@@ -135,7 +135,7 @@ class QueryEngine
                 );
 
                 $query = Query::make($model, $schema, ['options' => $options] + ($criteria[$alias] ?: []));
-                $result = $this->behavior->search($model, $query, $this->drivers[$driverName]);
+                $result = $this->behavior->search($model, $query, $this->drivers[$driverName], $this->resultBuilder);
             }
         }
 
@@ -189,69 +189,118 @@ class QueryEngine
                 continue;
             }
 
-            $filter = $this->makeRelationFilter($result, $relation);
+            if (!empty($relation['match'])) {
+                $this->includeSubModelByRuleFromTo($result, $subModel, $criteria, $relation);
+            } else if (!empty($relation['match_callback'])) {
+                $this->includeSubModelByCallbak($result, $subModel, $criteria, $relation);
+            }
+        }
+    }
 
-            if ($filter === null) {
-                // @tbd : Inject default value instead ?
-                continue;
+    private function includeSubModelByCallbak(Result $result, Model $model, array $criteria, array $relation)
+    {
+        $filter = call_user_func($relation['match_callback'], $result);
+
+        if (empty($filter)) {
+            return;
+        }
+
+        $alias = $model->getAlias();
+
+        if (!isset($criteria[$alias])) {
+            $criteria[$alias] = [];
+        }
+
+        if (!isset($criteria[$alias]['filters'])) {
+            $criteria[$alias]['filters'] = [];
+        }
+
+        foreach ($filter as $field => $values) {
+            if (!isset($criteria[$alias]['filters'][$field])) {
+                $criteria[$alias]['filters'][$field] = [];
             }
 
-            $alias = $subModel->getAlias();
-            $firstKey = key($filter);
+            if (!is_array($values)) {
+                $values = [ $values ];
+            }
 
-            if ($firstKey !== 0) {
-                $filterIn = [ FilterInterface::FILTER_IN => $filter[$firstKey] ];
-
-                $batchFilterIn = empty($criteria[$alias]['options']['multiple_requests'])
-                    ? [ [ FilterInterface::FILTER_IN => $filter[$firstKey] ] ]
-                    : array_map(function($value) {
-                        return [ FilterInterface::FILTER_IN => $value ];
-                    }, $filter[$firstKey]);
-
-                $batchCount = count($batchFilterIn);
-                $innerResults = [];
-
-                foreach ($batchFilterIn as $i => $filterIn) {
-                    $subCriteria = $criteria;
-
-                    !isset($subCriteria[$alias]) && $subCriteria[$alias] = [];
-
-                    $subCriteria[$alias]['filters'] = $this->mergeFiltersIn(
-                        $subCriteria[$alias]['filters'] ?? [],
-                        $firstKey,
-                        $filterIn
-                    );
-
-                    if ($subCriteria['alias'][$filters][$firstKey][FilterInterface::FILTER_IN] === []) {
-                        continue;
-                    }
-
-                    $subCriteria[$alias]['sub_context_ref'] = $firstKey;
-
-                    if ($batchCount === 1 || true) {
-                        $innerResult = $this->doQuery($subModel, $subCriteria);
-                        $this->injectIncluded($alias, $result, $innerResult, $relation);
-                    } else {
-                        $innerResult = $this->doQuery($subModel, $subCriteria, false);
-                        $innerResults = array_merge($innerResults, $innerResult);
-                    }
-                }
-
-                /*
-                if ($innerResults !== []) {
-                    // @todo : make function to merge results
-                    $innerResult = Result::merge($innerResults);
-                    // @todo : change $criteria
-                    $this->includeSubModels($innerResult, $model, $schema, $criteria);
-                    $this->injectIncluded($alias, $result, $innerResult, $relation);
-                }
-                */
+            if (!isset($criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN])) {
+                $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] = $values;
+            } else if (!is_array($criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN])) {
+                $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] = array_intersect(
+                    $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN],
+                    $values
+                );
             } else {
-                // @todo : Supports relations using many fields
-                continue;
+                $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] = array_intersect(
+                    $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN],
+                    $values
+                );
+            }
+
+            if ($criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] === []) {
+                return;
             }
         }
 
+        $innerResult = $this->doQuery($model, $criteria);
+        $this->injectIncluded($alias, $result, $innerResult, $relation);
+    }
+
+    private function includeSubModelByRuleFromTo(Result $result, Model $model, array $criteria, array $relation)
+    {
+        $filter = $this->makeRelationFilterByRuleFromTo($result, $relation['match']);
+
+        if (empty($filter)) {
+            return;
+        }
+
+        $alias = $model->getAlias();
+        $firstKey = key($filter);
+        $filterIn = [ FilterInterface::FILTER_IN => $filter[$firstKey] ];
+
+        $batchFilterIn = empty($criteria[$alias]['options']['multiple_requests'])
+            ? [ [ FilterInterface::FILTER_IN => $filter[$firstKey] ] ]
+            : array_map(function($value) {
+                return [ FilterInterface::FILTER_IN => $value ];
+            }, $filter[$firstKey]);
+
+        $batchCount = count($batchFilterIn);
+        $innerResults = [];
+
+        foreach ($batchFilterIn as $i => $filterIn) {
+            !isset($criteria[$alias]) && $criteria[$alias] = [];
+
+            $criteria[$alias]['filters'] = $this->mergeFiltersIn(
+                $criteria[$alias]['filters'] ?? [],
+                $firstKey,
+                $filterIn
+            );
+
+            if ($criteria['alias']['filters'][$firstKey][FilterInterface::FILTER_IN] === []) {
+                continue;
+            }
+
+            $criteria[$alias]['sub_context_ref'] = $firstKey;
+
+            if ($batchCount === 1 || true) {
+                $innerResult = $this->doQuery($model, $criteria);
+                $this->injectIncluded($alias, $result, $innerResult, $relation);
+            } else {
+                $innerResult = $this->doQuery($model, $criteria, false);
+                $innerResults = array_merge($innerResults, $innerResult);
+            }
+        }
+
+        /*
+        if ($innerResults !== []) {
+            // @todo : make function to merge results
+            $innerResult = Result::merge($innerResults);
+            // @todo : change $criteria
+            $this->includeSubModels($innerResult, $model, $schema, $criteria);
+            $this->injectIncluded($alias, $result, $innerResult, $relation);
+        }
+        */
     }
 
     private function mergeFiltersIn(array $filters, string $field, $filterIn)
@@ -359,17 +408,6 @@ class QueryEngine
                 }
             }
         }
-    }
-
-    private function makeRelationFilter(Result $result, array $relation)
-    {
-        if (!empty($relation['match'])) {
-            return $this->makeRelationFilterByRuleFromTo($result, $relation['match']);
-        } else if (!empty($relation['match_callback'])) {
-            return call_user_func($relation['match_callback'], $result);
-        }
-
-        return null;
     }
 
     private function makeRelationFilterByRuleFromTo(Result $result, array $matchRules)
