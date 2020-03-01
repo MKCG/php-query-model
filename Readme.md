@@ -130,12 +130,13 @@ Some `Driver` apply filters on fetched results and expect a `false` return value
 `callable` arguments by Driver
 ------------------------------
 
-| Driver        | First argument         | Second argument                   |
-| ------------- | ---------------------- | --------------------------------- |
-| Doctrine      | \MKCG\Model\DBAL\Query | \Doctrine\DBAL\Query\QueryBuilder |
-| CsvReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
-| RssReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
-| SitemapReader | \MKCG\Model\DBAL\Query | `array` representing a raw item   |
+| Driver        | First argument         | Second argument                                                                           |
+| ------------- | ---------------------- | ----------------------------------------------------------------------------------------- |
+| Doctrine      | \MKCG\Model\DBAL\Query | \Doctrine\DBAL\Query\QueryBuilder                                                         |
+| CsvReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item                                                           |
+| RssReader     | \MKCG\Model\DBAL\Query | `array` representing a raw item                                                           |
+| SitemapReader | \MKCG\Model\DBAL\Query | `array` representing a raw item                                                           |
+| MongoDB       | \MKCG\Model\DBAL\Quert | `array` representing the filters passed as first argument of `\MongoDB\Collection::find()`|
 
 # Example
 
