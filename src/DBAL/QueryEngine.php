@@ -83,7 +83,7 @@ class QueryEngine
                 yield $item;
             }
 
-            if (!empty($criteria[$alias]['scroll']->data['end']) || $processed === 0) {
+            if ($criteria[$alias]['scroll']->canScroll() === false || $processed === 0) {
                 break;
             }
 

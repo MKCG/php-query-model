@@ -89,7 +89,7 @@ class MongoDB implements DriverInterface
         $results->setCount($count);
 
         if ($isScroll && $count <= $query->limit + $query->offset) {
-            $query->context['scroll']->data['end'] = true;
+            $query->context['scroll']->stop();
         }
 
         return $results;

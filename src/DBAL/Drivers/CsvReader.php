@@ -42,7 +42,7 @@ class CsvReader implements DriverInterface
 
                 if (!is_array($header)) {
                     fclose($handler);
-                    $query->context['scroll']->data['end'] = true;
+                    $query->context['scroll']->stop();
 
                     return Result::make([]);
                 }
@@ -74,7 +74,7 @@ class CsvReader implements DriverInterface
                 $line = fgetcsv($handler);
 
                 if ($line === false || $line === null) {
-                    $query->context['scroll']->data['end'] = true;
+                    $query->context['scroll']->stop();
                     fclose($handler);
                     break;
                 }

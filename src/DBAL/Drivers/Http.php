@@ -65,7 +65,7 @@ class Http implements DriverInterface
             );
 
             if ($query->offset + $query->limit > $query->context['scroll']->data['count']) {
-                $this->stopScroll($query->context['scroll']);
+                $query->context['scroll']->stop();
             }
         } else {
             $body = $this->makeRequestBody($query);
@@ -82,7 +82,7 @@ class Http implements DriverInterface
             if ($query->limit > 0 && count($content) > $query->limit) {
                 $content = array_slice($content, $query->offset, $query->limit);
             } else if (!empty($query->context['scroll'])) {
-                $this->stopScroll($query->context['scroll']);
+                $query->context['scroll']->stop();
             }
         }
 
@@ -143,11 +143,6 @@ class Http implements DriverInterface
             default:
                 return [];
         }
-    }
-
-    protected function stopScroll(ScrollContext $scroll)
-    {
-        $scroll->data['end'] = true;
     }
 
     private function getResponse(Query $query, $body = null)
