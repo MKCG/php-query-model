@@ -5,30 +5,26 @@ namespace MKCG\Model\DBAL;
 use MKCG\Model\DBAL\Drivers\DriverInterface;
 use MKCG\Model\Model;
 use MKCG\Model\GenericSchema;
+use MKCG\Model\DBAL\Runtime\BehaviorNoCrash;
+use MKCG\Model\DBAL\Runtime\BehaviorInterface;
+
 
 class QueryEngine
 {
-    const FAIL_STRATEGY_CRASH = 1;
-    const FAIL_STRATEGY_IGNORE_LOGIC_ERROR = 2;
-    const FAIL_STRATEGY_IGNORE_RUNTIME_ERROR = 4;
-    const FAIL_STRATEGY_RETRY = 8;
-    const FAIL_STRATEGY_FALLBACK = 16;
-    const FAIL_STRATEGY_MOCK = 32;
-
     private $drivers = [];
     private $schemaCache = [];
     private $defaultDriverName;
     private $injectAsCollectionByDefault;
-    private $defaultFailureStrategy;
+    private $behavior;
 
     public function __construct(
         string $defaultDriverName = '',
         bool $injectAsCollectionByDefault = true,
-        int $defaultFailureStrategy = self::FAIL_STRATEGY_CRASH
+        BehaviorInterface $behavior = null
     ) {
         $this->defaultDriverName = $defaultDriverName;
         $this->injectAsCollectionByDefault = $injectAsCollectionByDefault;
-        $this->defaultFailureStrategy = $defaultFailureStrategy;
+        $this->behavior = $behavior ?? new BehaviorNoCrash();
     }
 
     public function registerDriver(DriverInterface $driver, string $name, bool $isDefault = false)
@@ -89,35 +85,29 @@ class QueryEngine
 
     private function doQuery(Model $model, array $criteria, bool $includeSubModels = true) : Result
     {
+        $result = new Result([], '');
+
         if (empty($this->drivers)) {
-            // @todo : Apply failure strategy
-            return Result::make([], '');
-        }
+            $result = $this->behavior->noDriver($model);
+        } else {
+            $schemaClassName = $model->getFromClass();
 
-        $schemaClassName = $model->getFromClass();
+            if (!isset($this->schemaCache[$schemaClassName])) {
+                $this->schemaCache[$schemaClassName] = (new $schemaClassName())
+                    ->initConfigurations()
+                    ->initRelations();
+            }
 
-        if (!isset($this->schemaCache[$schemaClassName])) {
-            $this->schemaCache[$schemaClassName] = (new $schemaClassName())
-                ->initConfigurations()
-                ->initRelations();
-        }
+            $schema = $this->schemaCache[$schemaClassName];
+            $driverName = $schema->getDriverName() ?: $this->defaultDriverName;
 
-        $schema = $this->schemaCache[$schemaClassName];
-        $driverName = $schema->getDriverName() ?: $this->defaultDriverName;
-
-        if (!isset($this->drivers[$driverName])) {
-            // @todo : Apply failure strategy
-            return Result::make([], '');
-        }
-
-        $alias = $model->getAlias();
-        $query = Query::make($model, $schema, $criteria[$alias] ?: []);
-
-        try {
-            $result = $this->drivers[$driverName]->search($query);
-        } catch (\Exception $e) {
-            // @todo : Apply failure strategy
-            return Result::make([], '');
+            if (!isset($this->drivers[$driverName])) {
+                $result = $this->behavior->unknownDriver($model, $driverName);
+            } else {
+                $alias = $model->getAlias();
+                $query = Query::make($model, $schema, $criteria[$alias] ?: []);
+                $result = $this->behavior->search($model, $query, $this->drivers[$driverName]);
+            }
         }
 
         $pkFields = $schema->getPrimaryKeys();
