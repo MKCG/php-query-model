@@ -2,11 +2,12 @@
 
 Simple multi-database library to search content on different engines and aggregate those results into document-oriented structures.
 
-# Engine
-
 The library define the class `MKCG\Model\DBAL\QueryEngine` to build documents using different `Drivers`.
 
-## API
+It also defines a simple `ETL` to be able to easily and efficiently synchronize content between different datasources.
+
+
+# Engine API
 
 The `QueryEngine` API define two methods : `query()` and `scroll()`.
 
@@ -225,10 +226,57 @@ Some `Driver` apply filters on fetched results and expect a `false` return value
 | SitemapReader | \MKCG\Model\DBAL\Query | `array` representing a raw item                                                           |
 | MongoDB       | \MKCG\Model\DBAL\Quert | `array` representing the filters passed as first argument of `\MongoDB\Collection::find()`|
 
+# ETL
 
-# Example
+A deadly simple ETL is defined as a single class `\MKCG\Model\ETL`.
+It can be used in combination with the QueryEngine `scroll` API to transform then push content to different loaders;
 
-A fully functionnal example is located in **examples/SocialNetwork**
+Example
+-------
+
+```php
+function pipelineEtl(QueryEngine $engine)
+{
+    $model = Schema\Product::make('default', 'products');
+    $criteria = (new QueryCriteria())
+        ->forCollection('products')
+            ->addFilter('sku.color', FilterInterface::FILTER_IN, ['aqua', 'purple'])
+        ;
+
+    $iterator = $engine->scroll($model, $criteria, 100);
+
+    $pushed = ETL::extract($engine->scroll($model, $criteria, 100), 1000, 500)
+        ->transform(function($item) {
+            return [
+                'id' => $item['_id'],
+                'sku' => $item['sku']
+            ];
+        })
+        ->transform(function($item) {
+            return $item + [
+                'sku_count' => count($item['sku'] ?? [])
+            ];
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 1 - Loading %d elements\n", count($bulk));
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 2 - Loading %d elements\n", count($bulk));
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 3 - Loading %d elements\n", count($bulk));
+        })
+        ->run();
+
+    echo sprintf("[ETL] Pushed %d elements\n", $pushed);
+}
+```
+
+
+# Test and examples
+
+No tests are provided although some will be made using `Behat` for the release of the version 1.0.0.
+However a fully functionnal example is provided in `examples/` and build documents using different kinds of `Drivers`
 
 From : ./examples
 
@@ -237,6 +285,37 @@ docker-compose up --build -d
 docker exec -it php_query_model sh -c "cd /home/php-query-model/examples && composer install"
 docker exec -it php_query_model sh -c "php /home/php-query-model/examples/index.php"
 ```
+
+
+By default this will run only two functions (located in `index.php`)
+
+```php
+pipelineEtl($engine);
+searchOrder($engine);
+// searchProducts($engine);
+// searchGithubRobot($engine);
+// searchSitemaps($engine);
+// searchPackages($engine);
+// searchUsers($engine);
+// searchHackerNews($engine);
+```
+
+The `pipelineEtl` use the Engine `scroll` API to iterates a list of `Product` stored in MongoDB and apply different `transformations`before pushing content with three `loaders` using the `ETL` component.
+
+
+The `searchOrder` use the Engine `scroll` API to :
+- scan a `CSV` file containing ecommerce `Order`
+    - then inject their corresponding `Product` stored on `MongoDB`
+    - then inject their correspondng customers stored as `User` into `MySQL`
+        - with their first two defined `Address` also stored in `Mysql`
+        - and all their `Post` stored in `Mysql`
+
+
+You might want to uncomment the other search functions to execute HTTP queries and fetch :
+- https://github.com/robots.txt with `searchGithubRobot`
+- https://news.ycombinator.com/ top stories with `searchHackerNews`
+- https://packagist.org/feeds/packages.rss RSS feed with `searchPackages`
+- https://www.sitemaps.org/sitemap.xml Sitemap with `searchSitemaps`
 
 # Roadmap
 

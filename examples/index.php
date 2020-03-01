@@ -10,6 +10,7 @@ use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Drivers\Adapters;
 use MKCG\Model\DBAL\CallableOptionValidator;
+use MKCG\Model\ETL;
 
 $mongoClient = new MongoDB\Client('mongodb://root:password@mongodb');
 
@@ -42,16 +43,53 @@ $engine = (new QueryEngine('mysql'))
 
 $startedAt = microtime(true);
 
-searchProducts($engine);
-searchStackOverflowRobot($engine);
-searchSitemaps($engine);
-searchPackages($engine);
-searchUsers($engine);
+pipelineEtl($engine);
 searchOrder($engine);
-searchHackerNews($engine);
+// searchProducts($engine);
+// searchGithubRobot($engine);
+// searchSitemaps($engine);
+// searchPackages($engine);
+// searchUsers($engine);
+// searchHackerNews($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function pipelineEtl(QueryEngine $engine)
+{
+    $model = Schema\Product::make('default', 'products');
+    $criteria = (new QueryCriteria())
+        ->forCollection('products')
+            ->addFilter('sku.color', FilterInterface::FILTER_IN, ['aqua', 'purple'])
+        ;
+
+    $iterator = $engine->scroll($model, $criteria, 100);
+
+    $pushed = ETL::extract($engine->scroll($model, $criteria, 100), 1000, 500)
+        ->transform(function($item) {
+            return [
+                'id' => $item['_id'],
+                'sku' => $item['sku']
+            ];
+        })
+        ->transform(function($item) {
+            return $item + [
+                'sku_count' => count($item['sku'] ?? [])
+            ];
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 1 - Loading %d elements\n", count($bulk));
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 2 - Loading %d elements\n", count($bulk));
+        })
+        ->load(function(iterable $bulk) {
+            echo sprintf("[ETL] Loader 3 - Loading %d elements\n", count($bulk));
+        })
+        ->run();
+
+    echo sprintf("[ETL] Pushed %d elements\n", $pushed);
+}
 
 function searchProducts(QueryEngine $engine)
 {
@@ -89,7 +127,7 @@ function searchProducts(QueryEngine $engine)
     echo "Products scrolled : " . $found . "\n\n";
 }
 
-function searchStackOverflowRobot(QueryEngine $engine)
+function searchGithubRobot(QueryEngine $engine)
 {
     $model = Schema\HttpRobot::make('default', 'robots.txt');
     $criteria = (new QueryCriteria())
