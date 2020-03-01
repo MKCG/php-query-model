@@ -112,13 +112,12 @@ function searchHackerNews(QueryEngine $engine)
         ->forCollection('hn')
             ->addOption('url', 'https://hacker-news.firebaseio.com/v0/topstories.json')
             ->addOption('json_formatter', [ Schema\HackerNewsTopStory::class , 'httpJsonFormatter' ])
-            ->setLimit(1)
         ->forCollection('story')
             ->addOption('multiple_requests', true)
             ->addOption('url_generator', [ Schema\HackerNewsStory::class , 'queryUrlGenerator' ])
         ;
 
-    foreach ($engine->scroll($model, $criteria) as $story) {
+    foreach ($engine->scroll($model, $criteria, 1) as $story) {
         echo json_encode($story, JSON_PRETTY_PRINT) . "\n\n";
     }
 }
