@@ -174,6 +174,8 @@ function searchOrder(QueryEngine $engine)
             ->addCallableFilter(function(Query $query, array $rawOrder) {
                 return $rawOrder['price'] !== $rawOrder['vat'];
             })
+            ->setOffset(1)
+            ->setLimit(2)
         ->forCollection('addresses')
             ->addCallableFilter(function(Query $query, \Doctrine\DBAL\Query\QueryBuilder $queryBuilder) {
                 $queryBuilder->andWhere(
@@ -187,7 +189,8 @@ function searchOrder(QueryEngine $engine)
 
     $orders = [];
 
-    foreach ($engine->scroll($model, $criteria) as $i => $order) {
+    // foreach ($engine->scroll($model, $criteria, 3) as $i => $order) {
+    foreach ($engine->query($model, $criteria)->getContent() as $i => $order) {
         $orders[] = $order;
     }
 

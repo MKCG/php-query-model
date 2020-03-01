@@ -27,85 +27,22 @@ class CsvReader implements DriverInterface
         $header = [];
 
         if (!empty($query->context['scroll'])) {
-            if (empty($query->context['scroll']->data['handler'])) {
-                $query->context['scroll']->data['handler'] = $this->openFile($query);
-            }
-
-            $handler = $query->context['scroll']->data['handler'];
-
-            if ($handler === null) {
-                return Result::make([]);
-            }
-
-            if (empty($query->context['scroll']->data['header'])) {
-                $header = fgetcsv($handler);
-
-                if (!is_array($header)) {
-                    fclose($handler);
-                    $query->context['scroll']->stop();
-
-                    return Result::make([]);
-                }
-
-                $query->context['scroll']->data['header'] = $header;
-            } else {
-                $header = $query->context['scroll']->data['header'];
-            }
+            list($handler, $header) = $this->getScrollParams($query);
         } else {
-            $handler = $this->openFile($query);
+            list($handler, $header) = $this->getHandlerWithHeader($query);
+        }
 
-            if ($handler === null) {
-                return Result::make([]);
-            }
-
-            $header = fgetcsv($handler);
-
-            if (!is_array($header)) {
-                fclose($handler);
-                return Result::make([]);
-            }
+        if (!is_resource($handler) || !is_array($header)) {
+            throw new \Exception("Unable to process CSV file");
         }
 
         $results = [];
         $found = 0;
 
         if (!empty($query->context['scroll'])) {
-            while ($found < $query->limit) {
-                $line = fgetcsv($handler);
-
-                if ($line === false || $line === null) {
-                    $query->context['scroll']->stop();
-                    fclose($handler);
-                    break;
-                }
-
-                $line = array_combine($header, $line);
-
-                if (ContentFilter::matchQuery($line, $query)) {
-                    $results[] = $line;
-                    $found++;
-                }
-            }
+            list($results, $found) = $this->scrollResults($query, $handler, $header);
         } else {
-            while (true) {
-                $line = fgetcsv($handler);
-
-                if ($line === false || $line === null) {
-                    break;
-                }
-
-                $line = array_combine($header, $line);
-
-                if (ContentFilter::matchQuery($line, $query)) {
-                    if ($found >= $query->offset && $found < $query->offset + $query->limit) {
-                        $results[] = $line;
-                    }
-
-                    $found++;
-                }
-            }
-
-            fclose($handler);
+            list($results, $found) = $this->listResults($query, $handler, $header);
         }
 
         if (!empty($query->fields)) {
@@ -116,6 +53,94 @@ class CsvReader implements DriverInterface
         }
 
         return Result::make($results, $query->entityClass);
+    }
+
+    private function listResults(Query $query, $handler, array $header) : array
+    {
+        $results = [];
+        $found = 0;
+
+        while (true) {
+            $line = fgetcsv($handler);
+
+            if ($line === false || $line === null) {
+                break;
+            }
+
+            $line = array_combine($header, $line);
+
+            if (ContentFilter::matchQuery($line, $query)) {
+                $found++;
+
+                if ($found <= $query->offset) {
+                    continue;
+                }
+
+                if ($query->limit === 0 || $found <= $query->offset + $query->limit) {
+                    $results[] = $line;
+                }
+            }
+        }
+
+        fclose($handler);
+
+        return [ $results, $found ];
+    }
+
+    private function scrollResults(Query $query, $handler, array $header) : array
+    {
+        $found = $query->context['scroll']->data['found'] ?? 0;
+        $results = [];
+
+        while ($found < $query->limit + $query->offset) {
+            $line = fgetcsv($handler);
+
+            if ($line === false || $line === null) {
+                $query->context['scroll']->stop();
+                fclose($handler);
+                break;
+            }
+
+            $line = array_combine($header, $line);
+
+            if (ContentFilter::matchQuery($line, $query)) {
+                $found++;
+
+                if ($found > $query->offset) {
+                    $results[] = $line;
+                }
+            }
+        }
+
+        $query->context['scroll']->data['found'] = $found;
+
+        return [ $results , $fetched ];
+    }
+
+    private function getScrollParams(Query $query) : array
+    {
+        if (empty($query->context['scroll']->data)) {
+            $query->context['scroll']->data = $this->getHandlerWithHeader($query);
+        }
+
+        return $query->context['scroll']->data;
+    }
+
+    private function getHandlerWithHeader(Query $query) : array
+    {
+        $handler = $this->openFile($query);
+        $header = null;
+
+        if ($handler !== null) {
+            $header = fgetcsv($handler);
+
+            if (!is_array($header)) {
+                fclose($handler);
+                $header = null;
+            }
+        }
+
+        return [$handler, $header];
     }
 
     protected function openFile(Query $query)
