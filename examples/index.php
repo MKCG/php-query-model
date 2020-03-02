@@ -68,6 +68,8 @@ function searchCustomersOrders(QueryEngine $engine)
             ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'credit_card_type', 'limit' => 3])
             ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'customer_id', 'limit' => 3])
             ->addAggregation(AggregationInterface::AGG_AVERAGE, ['field' => 'price', 'decimal' => 3])
+            ->addAggregation(AggregationInterface::AGG_MIN, ['field' => 'price', 'decimal' => 3])
+            ->addAggregation(AggregationInterface::AGG_MAX, ['field' => 'price', 'decimal' => 3])
             ->setLimit(10)
         ;
 

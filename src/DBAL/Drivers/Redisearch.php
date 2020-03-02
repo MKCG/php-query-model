@@ -89,6 +89,22 @@ class Redisearch implements DriverInterface
                     $agg['averages'][$config['field']] = $this->makeAverage(clone $query, $config['field'], $config, $search);
                     break;
 
+                case AggregationInterface::AGG_MIN:
+                    if (!isset($agg['min'])) {
+                        $agg['min'] = [];
+                    }
+
+                    $agg['min'][$config['field']] = $this->makeMin(clone $query, $config['field'], $config, $search);
+                    break;
+
+                case AggregationInterface::AGG_MAX:
+                    if (!isset($agg['max'])) {
+                        $agg['max'] = [];
+                    }
+
+                    $agg['max'][$config['field']] = $this->makeMax(clone $query, $config['field'], $config, $search);
+                    break;
+
                 default:
                     throw new \Exception("Aggregation not supported : " . $config['type']);
             }
@@ -97,7 +113,40 @@ class Redisearch implements DriverInterface
         return $agg;
     }
 
-    private function makeAverage(Query $query, string $field, array $config, string $search)
+    private function makeAverage(Query $query, string $field, array $config, string $search) : float
+    {
+        $result = $this->makeBuilderAggGroupByUnknown($query)
+            ->avg($field)
+            ->search($search, true);
+
+        $result = (float) current(array_column($result->getDocuments(), 'avg_' . $field));
+
+        if (isset($config['decimal'])) {
+            $result = round($result, $config['decimal']);
+        }
+
+        return $result;
+    }
+
+    private function makeMin(Query $query, string $field, array $config, string $search) : float
+    {
+        $result = $this->makeBuilderAggGroupByUnknown($query)
+            ->min($field)
+            ->search($search, true);
+
+        return (float) current(array_column($result->getDocuments(), 'min_' . $field));
+    }
+
+    private function makeMax(Query $query, string $field, array $config, string $search) : float
+    {
+        $result = $this->makeBuilderAggGroupByUnknown($query)
+            ->max($field)
+            ->search($search, true);
+
+        return (float) current(array_column($result->getDocuments(), 'max_' . $field));
+    }
+
+    private function makeBuilderAggGroupByUnknown(Query $query)
     {
         $fields = $query->schema->getFields('');
 
@@ -108,20 +157,10 @@ class Redisearch implements DriverInterface
             $groupBy = substr(md5($groupBy), 0, 8);
         }
 
-        $avg = (new Index($this->client))
+        return (new Index($this->client))
             ->setIndexName($query->name)
             ->makeAggregateBuilder()
-            ->groupBy('id')
-            ->avg($field)
-            ->search($search, true);
-
-        $avg = (float) current(array_column($avg->getDocuments(), 'avg_' . $field));
-
-        if (isset($config['decimal'])) {
-            $avg = round($avg, $config['decimal']);
-        }
-
-        return $avg;
+            ->groupBy($groupBy);
     }
 
     private function makeFacet(Query $query, string $field, array $config, string $search)

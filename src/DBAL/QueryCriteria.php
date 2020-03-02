@@ -18,12 +18,16 @@ class QueryCriteria
         AggregationInterface::AGG_TERMS_CARDINALITY,
         AggregationInterface::AGG_FACET,
         AggregationInterface::AGG_AVERAGE,
+        AggregationInterface::AGG_MIN,
+        AggregationInterface::AGG_MAX,
     ];
 
     private static $fieldAwareAggregations = [
         AggregationInterface::AGG_TERMS_CARDINALITY,
         AggregationInterface::AGG_FACET,
         AggregationInterface::AGG_AVERAGE,
+        AggregationInterface::AGG_MIN,
+        AggregationInterface::AGG_MAX,
     ];
 
     private static $arrayFilters = [
