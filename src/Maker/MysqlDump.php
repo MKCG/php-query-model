@@ -503,14 +503,23 @@ CLASS;
     {
         $definitions = [];
 
+        $fieldType = [];
+
         foreach ($fields as $name => $config) {
-            $type = $this->convertFieldTypeToConstant($config['type'] ?? '');
+            $fieldType[$name] = $this->convertFieldTypeToConstant($config['type'] ?? '');
+        }
+
+        $maxFieldLen = max(array_map('strlen', array_keys($fields)));
+        $maxTypeLen = max(array_map('strlen', $fieldType));
+
+        foreach ($fields as $name => $config) {
+            $type = $fieldType[$name];
             $filterable = !empty($config['filterable'])
                 ? 'true'
                 : 'false';
 
-            $name = str_pad("'${name}'", 20);
-            $type = str_pad($type, 30);
+            $name = str_pad("'${name}'", $maxFieldLen + 2);
+            $type = str_pad($type, $maxTypeLen);
             $aggregatable = $filterable;
             $filterable = $sortable = str_pad($filterable, 5);
 
