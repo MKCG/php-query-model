@@ -217,25 +217,24 @@ class MysqlDump
 
         $primaryKeys = [];
         $relations = [];
-        $filterable = [];
 
         foreach ($fields as $field => $config) {
             if (!empty($config['isPrimary'])) {
                 $primaryKeys[] = $field;
-                $filterable[] = $field;
+                $fields[$field]['filterable'] = true;
             }
 
             if (isset($this->filterable[$database][$table])
                 && in_array($field, $this->filterable[$database][$table])
             ) {
-                $filterable[] = $field;
+                $fields[$field]['filterable'] = true;
             }
 
             if (empty($config['relations'])) {
                 continue;
             }
 
-            $filterable[] = $field;
+            $fields[$field]['filterable'] = true;
 
             foreach ($config['relations'] as $relation) {
                 if ($relation[0] === $database
@@ -258,14 +257,19 @@ class MysqlDump
                 ]);
 
                 $relations[$relationHash] = <<<FOREIGN
-
-        \$this->addRelation('${relation[0]}_${relation[1]}_${relation[2]}', ${relationClassName}::class, '${field}', '${relation[2]}', true);
+            ->addRelation(
+                '${relation[0]}_${relation[1]}_${relation[2]}',
+                ${relationClassName}::class,
+                '${field}',
+                '${relation[2]}',
+                true
+            )
 FOREIGN;
             }
         }
 
         ksort($relations);
-        $relations = implode("\n", $relations);
+        $relations = trim(implode("\n", $relations));
 
         $entityClass = isset($this->mapTableToEntity[$database . '.' . $table])
             ? $this->mapTableToEntity[$database . '.' . $table] . '::class'
@@ -276,7 +280,7 @@ FOREIGN;
             ? "'" . implode("', '", $primaryKeys) . "'"
             : [];
 
-        $filterable = array_unique($filterable);
+        $fieldDefinitions = $this->makeFieldDefinitions($fields);
 
         $fileContent = <<<CLASS
 <?php
@@ -315,11 +319,30 @@ ${fieldsName}
     ];
 CLASS;
 
+        if ($fieldDefinitions !== '') {
+            $fileContent .= <<<CLASS
+
+
+    public function initFields() : self
+    {
+        \$this${fieldDefinitions}
+        ;
+
+        return \$this;
+    }
+CLASS;
+        }
+
+
         if ($relations !== '') {
             $fileContent .= <<<CLASS
 
+
     public function initRelations() : self
-${relations}
+    {
+        \$this${relations}
+        ;
+
         return \$this;
     }
 CLASS;
@@ -474,5 +497,54 @@ CLASS;
         return in_array(strtolower($name), ['interface'])
             ? $name . 's'
             : $name;
+    }
+
+    private function makeFieldDefinitions(array $fields) : string
+    {
+        $definitions = [];
+
+        foreach ($fields as $name => $config) {
+            $type = $this->convertFieldTypeToConstant($config['type'] ?? '');
+            $filterable = !empty($config['filterable'])
+                ? 'true'
+                : 'false';
+
+            $name = str_pad("'${name}'", 20);
+            $type = str_pad($type, 30);
+            $aggregatable = $filterable;
+            $filterable = $sortable = str_pad($filterable, 5);
+
+            $definitions[] = <<<FIELD
+            ->setFieldDefinition(${name}, ${type}, ${filterable}, ${sortable}, ${aggregatable})
+FIELD;
+        }
+
+        return trim(implode("\n", $definitions));
+    }
+
+    private function convertFieldTypeToConstant(string $type) : string
+    {
+        switch ($type) {
+            case FieldInterface::TYPE_BOOL:
+                return 'FieldInterface::TYPE_BOOL';
+
+            case FieldInterface::TYPE_BINARY:
+                return 'FieldInterface::TYPE_BINARY';
+
+            case FieldInterface::TYPE_DATETIME:
+                return 'FieldInterface::TYPE_DATETIME';
+
+            case FieldInterface::TYPE_FLOAT:
+                return 'FieldInterface::TYPE_FLOAT';
+
+            case FieldInterface::TYPE_INT:
+                return 'FieldInterface::TYPE_INT';
+
+            case FieldInterface::TYPE_STRING:
+                return 'FieldInterface::TYPE_STRING';
+
+            default:
+                return '';
+        }
     }
 }

@@ -328,7 +328,6 @@ Work In progress
 | -------------------- | ----------------------------------------------------------- |
 | Elasticsearch Driver |                                                             |
 | Aggregations         |                                                             |
-| Content type         | Define the type of each schema property                     |
 | Callable validation  | Validate callable arguments using Reflection and PHP tokens |
 
 Backlog
