@@ -68,7 +68,7 @@ class Doctrine implements DriverInterface
         $content = $queryBuilder->execute()->fetchAll();
         $result = $resultBuilder->build($content, $query);
 
-        if (empty($query->context['scroll'])) {
+        if ($query->scroll === null) {
             $count = $this->count(clone $queryBuilder);
             $result->setCount($count);
         }

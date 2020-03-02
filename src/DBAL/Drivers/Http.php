@@ -58,15 +58,15 @@ class Http implements DriverInterface
     {
         $content = [];
 
-        if (!empty($query->context['scroll']->data['content'])) {
+        if (!empty($query->scroll->data['content'])) {
             $content = array_slice(
-                $query->context['scroll']->data['content'],
+                $query->scroll->data['content'],
                 $query->offset,
                 $query->limit
             );
 
-            if ($query->offset + $query->limit > $query->context['scroll']->data['count']) {
-                $query->context['scroll']->stop();
+            if ($query->offset + $query->limit > $query->scroll->data['count']) {
+                $query->scroll->stop();
             }
         } else {
             $body = $this->makeRequestBody($query);
@@ -75,15 +75,15 @@ class Http implements DriverInterface
                 ? $this->makeResultList($query, $response)
                 : [];
 
-            if (!empty($query->context['scroll'])) {
-                $query->context['scroll']->data['content'] = $content;
-                $query->context['scroll']->data['count'] = count($content);
+            if ($query->scroll !== null) {
+                $query->scroll->data['content'] = $content;
+                $query->scroll->data['count'] = count($content);
             }
 
             if ($query->limit > 0 && count($content) > $query->limit) {
                 $content = array_slice($content, $query->offset, $query->limit);
-            } else if (!empty($query->context['scroll'])) {
-                $query->context['scroll']->stop();
+            } else if ($query->scroll !== null) {
+                $query->scroll->stop();
             }
         }
 

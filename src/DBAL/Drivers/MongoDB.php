@@ -65,7 +65,7 @@ class MongoDB implements DriverInterface
 
     public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
-        $isScroll = !empty($query->context['scroll']);
+        $isScroll = $query->scroll !== null;
 
         list($collection, $filters, $criteria) = $isScroll
             ? $this->scrollSearch($query)
@@ -83,14 +83,14 @@ class MongoDB implements DriverInterface
 
         $results = $resultBuilder->build($items, $query);
 
-        $count = $isScroll && isset($query->context['scroll']->data['count'])
-            ? $query->context['scroll']->data['count']
+        $count = $isScroll && isset($query->scroll->data['count'])
+            ? $query->scroll->data['count']
             : $collection->countDocuments($filters);
 
         $results->setCount($count);
 
         if ($isScroll && $count <= $query->limit + $query->offset) {
-            $query->context['scroll']->stop();
+            $query->scroll->stop();
         }
 
         return $results;
@@ -98,11 +98,11 @@ class MongoDB implements DriverInterface
 
     private function scrollSearch(Query $query) : array
     {
-        if (!isset($query->context['scroll']->data['last_query'])) {
-            $query->context['scroll']->data['last_query'] = $this->makeSearchParams($query);
+        if (!isset($query->scroll->data['last_query'])) {
+            $query->scroll->data['last_query'] = $this->makeSearchParams($query);
         }
 
-        list($collection, $filters, $criteria) = $query->context['scroll']->data['last_query'];
+        list($collection, $filters, $criteria) = $query->scroll->data['last_query'];
         $criteria['skip'] = $query->offset;
         $criteria['limit'] = $query->limit;
 

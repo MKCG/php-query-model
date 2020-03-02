@@ -27,7 +27,7 @@ class CsvReader implements DriverInterface
         $handler = null;
         $header = [];
 
-        if (!empty($query->context['scroll'])) {
+        if ($query->scroll !== null) {
             list($handler, $header) = $this->getScrollParams($query);
         } else {
             list($handler, $header) = $this->getHandlerWithHeader($query);
@@ -40,7 +40,7 @@ class CsvReader implements DriverInterface
         $results = [];
         $found = 0;
 
-        if (!empty($query->context['scroll'])) {
+        if ($query->scroll !== null) {
             list($results, $found) = $this->scrollResults($query, $handler, $header);
         } else {
             list($results, $found) = $this->listResults($query, $handler, $header);
@@ -92,14 +92,14 @@ class CsvReader implements DriverInterface
 
     private function scrollResults(Query $query, $handler, array $header) : array
     {
-        $found = $query->context['scroll']->data['found'] ?? 0;
+        $found = $query->scroll->data['found'] ?? 0;
         $results = [];
 
         while ($found < $query->limit + $query->offset) {
             $line = fgetcsv($handler);
 
             if ($line === false || $line === null) {
-                $query->context['scroll']->stop();
+                $query->scroll->stop();
                 fclose($handler);
                 break;
             }
@@ -115,18 +115,18 @@ class CsvReader implements DriverInterface
             }
         }
 
-        $query->context['scroll']->data['found'] = $found;
+        $query->scroll->data['found'] = $found;
 
         return [ $results , $found ];
     }
 
     private function getScrollParams(Query $query) : array
     {
-        if (empty($query->context['scroll']->data)) {
-            $query->context['scroll']->data = $this->getHandlerWithHeader($query);
+        if (empty($query->scroll->data)) {
+            $query->scroll->data = $this->getHandlerWithHeader($query);
         }
 
-        return $query->context['scroll']->data;
+        return $query->scroll->data;
     }
 
     private function getHandlerWithHeader(Query $query) : array

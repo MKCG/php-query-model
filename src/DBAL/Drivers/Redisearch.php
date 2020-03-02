@@ -47,15 +47,15 @@ class Redisearch implements DriverInterface
         $result = $resultBuilder->build($redisResult->getDocuments(), $query);
         $result->setCount($redisResult->getCount());
 
-        if ($query->context['scroll']) {
-            if (!isset($query->context['scroll']->data['totalLimit'])) {
-                $query->context['scroll']->data['totalLimit'] = $query->limit;
+        if ($query->scroll !== null) {
+            if (!isset($query->scroll->data['totalLimit'])) {
+                $query->scroll->data['totalLimit'] = $query->limit;
             } else {
-                $query->context['scroll']->data['totalLimit'] += $query->limit;
+                $query->scroll->data['totalLimit'] += $query->limit;
             }
 
-            if ($query->context['scroll']->data['totalLimit'] >= $redisResult->getCount()) {
-                $query->context['scroll']->stop();
+            if ($query->scroll->data['totalLimit'] >= $redisResult->getCount()) {
+                $query->scroll->stop();
             }
         }
 

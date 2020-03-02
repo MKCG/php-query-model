@@ -20,6 +20,7 @@ class Query
     public $entityClass = '';
     public $countResults = false;
     public $context = [];
+    public $scroll = null;
     public $schema;
 
     public static function make(Model $model, GenericSchema $schema, array $criteria) : self
@@ -63,7 +64,7 @@ class Query
         }
 
         if (isset($criteria['scroll'])) {
-            $query->context['scroll'] = $criteria['scroll'];
+            $query->scroll = $criteria['scroll'];
         }
 
         if (isset($criteria['options'])) {
