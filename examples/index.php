@@ -34,12 +34,14 @@ $engine = (new QueryEngine('mysql'))
     ->registerDriver(new Drivers\Http(new Adapters\Guzzle), 'http')
     ->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot')
     ->registerDriver(new Drivers\MongoDB($mongoClient), 'mongodb')
+    ->registerDriver(new Drivers\Redisearch($redisClient), 'redisearch')
 ;
 
 createFakeData($sqlConnection, $mongoClient, $redisClient, $fixturePath . DIRECTORY_SEPARATOR, $engine);
 
 $startedAt = microtime(true);
 
+searchCustomersOrders($engine);
 pipelineEtl($engine);
 searchOrder($engine);
 // searchProducts($engine);
@@ -51,6 +53,32 @@ searchOrder($engine);
 
 $took = microtime(true) - $startedAt;
 echo "Took : " . round($took, 3) . "s\n";
+
+function searchCustomersOrders(QueryEngine $engine)
+{
+    $model = Schema\SearchableCustomerOrder::make('default', 'customers_orders');
+    $criteria = (new QueryCriteria())
+        ->forCollection('customers_orders')
+            ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 15)
+            ->addFilter('customer_firstname', FilterInterface::FILTER_FULLTEXT_MATCH, '%%Jayce%%')
+            ->setLimit(10)
+        ;
+
+    $count = 0;
+
+    foreach ($engine->scroll($model, $criteria, 100) as $customerOrder) {
+        $count++;
+
+        if ($count % 100 === 0) {
+            echo sprintf("Scrolled over %d customer orders\n", $count);
+        }
+
+        echo json_encode($customerOrder, JSON_PRETTY_PRINT) . "\n\n";
+    }
+
+    echo sprintf("Scrolled over %d customer orders\n", $count);
+}
+
 
 function pipelineEtl(QueryEngine $engine)
 {

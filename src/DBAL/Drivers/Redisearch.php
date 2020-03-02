@@ -9,6 +9,7 @@ use MKCG\Model\DBAL\FilterInterface;
 
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Ehann\RediSearch\Query\Builder;
+use Ehann\RediSearch\Index;
 
 class Redisearch implements DriverInterface
 {
@@ -27,7 +28,8 @@ class Redisearch implements DriverInterface
 
     public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
     {
-        $queryBuilder = (new Builder($this->client, $query->name))
+        $queryBuilder = (new Index($this->client))
+            ->setIndexName($query->name)
             ->return($query->fields)
             ->limit($query->offset, $query->limit);
 
@@ -45,6 +47,18 @@ class Redisearch implements DriverInterface
         $result = $resultBuilder->build($redisResult->getDocuments(), $query);
         $result->setCount($redisResult->getCount());
 
+        if ($query->context['scroll']) {
+            if (!isset($query->context['scroll']->data['totalLimit'])) {
+                $query->context['scroll']->data['totalLimit'] = $query->limit;
+            } else {
+                $query->context['scroll']->data['totalLimit'] += $query->limit;
+            }
+
+            if ($query->context['scroll']->data['totalLimit'] >= $redisResult->getCount()) {
+                $query->context['scroll']->stop();
+            }
+        }
+
         return $result;
     }
 
@@ -59,23 +73,25 @@ class Redisearch implements DriverInterface
                     $value = [ $value ];
                 }
 
-                if (in_array($type, [FilterInterface::FILTER_GREATER_THAN, FilterInterface::FILTER_LESS_THAN])) {
-                    $value = '(' . $value;
-                }
-
                 switch ($type) {
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
                         $search[] = sprintf("@%s:%s", $this->escape($field), $this->escape($value));
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
+                        $search[] = sprintf("@%s:[(%f +inf]", $this->escape($field), (float) $value);
+                        break;
+
                     case FilterInterface::FILTER_GREATER_THAN_EQUAL:
-                        $search[] = sprintf("@%s:[%f +inf]", $this->escape($field), $this->escape($value));
+                        $search[] = sprintf("@%s:[%f +inf]", $this->escape($field), (float) $value);
                         break;
 
                     case FilterInterface::FILTER_LESS_THAN:
+                        $search[] = sprintf("@%s:[-inf (%f]", $this->escape($field), (float) $value);
+                        break;
+
                     case FilterInterface::FILTER_LESS_THAN_EQUAL:
-                        $search[] = sprintf("@%s:[-inf %f]", $this->escape($field), $this->escape($value));
+                        $search[] = sprintf("@%s:[-inf %f]", $this->escape($field), (float) $value);
                         break;
 
                     case FilterInterface::FILTER_IN:

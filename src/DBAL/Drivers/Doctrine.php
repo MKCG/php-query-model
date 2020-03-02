@@ -48,10 +48,7 @@ class Doctrine implements DriverInterface
         }
 
         if ($query->limitByParent > 0) {
-            $ids = $this->listIdsForeachParent(
-                $query,
-                clone $queryBuilder
-            );
+            $ids = $this->listIdsForeachParent($query, clone $queryBuilder);
 
             if (empty($ids)) {
                 return $resultBuilder->build([], $query);
