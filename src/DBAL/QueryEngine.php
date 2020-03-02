@@ -113,9 +113,7 @@ class QueryEngine
             $schemaClassName = $model->getFromClass();
 
             if (!isset($this->schemaCache[$schemaClassName])) {
-                $this->schemaCache[$schemaClassName] = (new $schemaClassName())
-                    ->initConfigurations()
-                    ->initRelations();
+                $this->schemaCache[$schemaClassName] = (new $schemaClassName())->init();
             }
 
             $schema = $this->schemaCache[$schemaClassName];

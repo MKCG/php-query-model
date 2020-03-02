@@ -20,6 +20,7 @@ class Query
     public $entityClass = '';
     public $countResults = false;
     public $context = [];
+    public $schema;
 
     public static function make(Model $model, GenericSchema $schema, array $criteria) : self
     {
@@ -29,6 +30,7 @@ class Query
         $query->name = $schema->getFullyQualifiedName();
         $query->primaryKeys = $schema->getPrimaryKeys();
         $query->entityClass = $schema->getEntityClass();
+        $query->schema = $schema;
 
         if (isset($criteria['filters'])) {
             $query->filters = $criteria['filters'];

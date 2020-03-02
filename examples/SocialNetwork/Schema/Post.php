@@ -4,6 +4,7 @@ namespace MKCG\Examples\SocialNetwork\Schema;
 
 use MKCG\Model\GenericSchema;
 use MKCG\Model\GenericEntity;
+use MKCG\Model\FieldInterface;
 
 class Post extends GenericSchema
 {
@@ -25,5 +26,16 @@ class Post extends GenericSchema
     {
         $this->addRelation('author', User::class, 'id_user', 'id', false);
         return $this;
+    }
+
+    protected function initFields() : self
+    {
+        return $this
+            ->setFieldDefinition('id', FieldInterface::TYPE_INT, true, true)
+            ->setFieldDefinition('id_user', FieldInterface::TYPE_INT, true, true)
+            ->setFieldDefinition('published_at', FieldInterface::TYPE_DATETIME)
+            ->setFieldDefinition('title', FieldInterface::TYPE_STRING)
+            ->setFieldDefinition('content', FieldInterface::TYPE_STRING)
+        ;
     }
 }

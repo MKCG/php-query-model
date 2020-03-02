@@ -4,6 +4,7 @@ namespace MKCG\Examples\SocialNetwork\Schema;
 
 use MKCG\Model\GenericSchema;
 use MKCG\Model\GenericEntity;
+use MKCG\Model\FieldInterface;
 
 class Product extends GenericSchema
 {
@@ -24,4 +25,16 @@ class Product extends GenericSchema
             ]
         ],
     ];
+
+    protected function initFields() : self
+    {
+        return $this
+            ->setFieldDefinition('_id', FieldInterface::TYPE_INT, true)
+            ->setFieldDefinition('name', FieldInterface::TYPE_STRING, true)
+            ->setFieldDefinition('society', FieldInterface::TYPE_STRING)
+            ->setFieldDefinition('sku.color', FieldInterface::TYPE_STRING, true, true, true)
+            ->setFieldDefinition('sku.isbn13', FieldInterface::TYPE_STRING)
+            ->setFieldDefinition('sku.country', FieldInterface::TYPE_STRING, true, true, true)
+        ;
+    }
 }

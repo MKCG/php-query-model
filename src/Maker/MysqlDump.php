@@ -4,6 +4,7 @@ namespace MKCG\Model\Maker;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\ParameterType;
+use MKCG\Model\FieldInterface;
 
 class MysqlDump
 {
@@ -48,7 +49,7 @@ class MysqlDump
 
                 switch ($type) {
                     case 'bit':
-                        $type = 'bool';
+                        $type = FieldInterface::TYPE_BOOL;
                         break;
 
                     case 'bigint':
@@ -56,19 +57,19 @@ class MysqlDump
                     case 'mediumint':
                     case 'smallint':
                     case 'tinyint';
-                        $type = 'int';
+                        $type = FieldInterface::TYPE_INT;
                         break;
 
                     case 'decimal':
                     case 'float':
                     case 'double':
-                        $type = 'float';
+                        $type = FieldInterface::TYPE_FLOAT;
                         break;
 
                     case 'date':
                     case 'datetime':
                     case 'timestamp':
-                        $type = 'datetime';
+                        $type = FieldInterface::TYPE_DATETIME;
                         break;
 
                     case 'char':
@@ -77,22 +78,21 @@ class MysqlDump
                     case 'longtext':
                     case 'text':
                     case 'varchar':
-                        $type = 'string';
+                        $type = FieldInterface::TYPE_STRING;
                         break;
 
                     case 'blob':
                     case 'longblob':
                     case 'tinyblob':
-                        $type = 'binary';
+                        $type = FieldInterface::TYPE_BINARY;
                         break;
 
                     case 'enum':
-                        $type = '';
+                        $type = FieldInterface::TYPE_ENUM;
                         break;
 
                     default:
-                        // var_dump($type);
-                        break;
+                        throw new \Exception("Field type not supported : " . $type);
                 }
 
                 $schema[$database][$column['table_name']][$column['column_name']] = [
@@ -204,10 +204,7 @@ class MysqlDump
         $classFilePath = $namespacePath . DIRECTORY_SEPARATOR . $classname . '.php';
 
         $classContent = $this->makeClass($namespace, $classname, $database, $table, $fields);
-
-        // if (!in_array($classFile, $knownClasses)) {
-            file_put_contents($classFilePath, $classContent);
-        // }
+        file_put_contents($classFilePath, $classContent);
     }
 
     private function makeClass($namespace, $classname, $database, $table, array $fields)
@@ -280,10 +277,6 @@ FOREIGN;
             : [];
 
         $filterable = array_unique($filterable);
-        sort($filterable);
-        $filterable = $filterable !== []
-            ? "'" . implode("', '", $filterable) . "'"
-            : [];
 
         $fileContent = <<<CLASS
 <?php
@@ -291,6 +284,7 @@ FOREIGN;
 namespace $this->modelNamespace\\${namespace};
 
 use MKCG\Model\GenericSchema;
+use MKCG\Model\FieldInterface;
 
 class ${classname} extends GenericSchema
 {
@@ -308,13 +302,6 @@ CLASS;
             $fileContent .= <<<CLASS
 
     protected \$primaryKeys = [${primaryKeys}];
-CLASS;
-        }
-
-        if ($filterable !== []) {
-            $fileContent .= <<<CLASS
-
-    protected \$filterableFields = [${filterable}];
 CLASS;
         }
 

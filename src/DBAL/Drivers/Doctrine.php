@@ -2,6 +2,7 @@
 
 namespace MKCG\Model\DBAL\Drivers;
 
+use MKCG\Model\FieldInterface;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
@@ -16,10 +17,10 @@ class Doctrine implements DriverInterface
     private $connection;
     private $reservedWords;
 
-    public function __construct(Connection $connection, array $reservedWords = ['key'])
+    public function __construct(Connection $connection, array $reservedWords = ['key', 'value'])
     {
         $this->connection = $connection;
-        $this->reservedWords = $reservedWords;
+        $this->reservedWords = array_map('strtolower', $reservedWords);
     }
 
     public function getSupportedOptions() : array
@@ -56,7 +57,7 @@ class Doctrine implements DriverInterface
                 return $resultBuilder->build([], $query);
             }
 
-            $this->applyFilterIn($queryBuilder, current($query->primaryKeys), $ids);
+            $this->applyFilterIn($queryBuilder, current($query->primaryKeys), $ids, $query);
         } else {
             if ($query->limit > 0) {
                 $queryBuilder->setMaxResults($query->limit);
@@ -70,7 +71,7 @@ class Doctrine implements DriverInterface
         $content = $queryBuilder->execute()->fetchAll();
         $result = $resultBuilder->build($content, $query);
 
-        if ($query->countResults || true) {
+        if (empty($query->context['scroll'])) {
             $count = $this->count(clone $queryBuilder);
             $result->setCount($count);
         }
@@ -84,6 +85,10 @@ class Doctrine implements DriverInterface
     ) {
         if (count($query->primaryKeys) !== 1) {
             throw new \LogicException("limitByParent can only be applied when there is only one primaryKey");
+        }
+
+        if (!isset($query->context['parent_ref'])) {
+            throw new \Exception("The 'parent_ref' context is missing from the query");
         }
 
         $innerQueryBuilder->select([$query->context['parent_ref'] , current($query->primaryKeys) ]);
@@ -119,9 +124,6 @@ class Doctrine implements DriverInterface
             $escapedFieldName
         );
 
-        // $statement = $this->connection
-        //     ->prepare($sql);
-
         foreach ($innerQueryBuilder->getParameters() as $parameter => $value) {
             if (is_array($value)) {
                 $value = array_map(function($value) {
@@ -132,21 +134,8 @@ class Doctrine implements DriverInterface
                 $value = implode(', ', $value);
 
                 $sql = str_replace(':' . $parameter, $value, $sql);
-                // $statement->bindValue($parameter, $value, \PDO::PARAM_STR_ARRAY);
             } else {
                 $sql = str_replace(':' . $parameter, $value, $sql);
-
-                // $type = \PDO::PARAM_STR;
-
-                // if (is_bool($value)) {
-                //     $type = \PDO::PARAM_BOOL;
-                // } else if (is_int($value)) {
-                //     $type = \PDO::PARAM_INT;
-                // } else if (is_null($value)) {
-                //     $type = \PDO::PARAM_NULL;
-                // }
-
-                // $statement->bindValue($parameter, $value, $type);
             }
         }
 
@@ -193,12 +182,12 @@ class Doctrine implements DriverInterface
     {
         foreach ($query->filters as $field => $value) {
             if (!is_array($value)) {
-                $this->applyFilterIn($queryBuilder, $field, [ $value ]);
+                $this->applyFilterIn($queryBuilder, $field, [ $value ], $query);
                 continue;
             }
 
             if (array_keys($value) === range(0, count($value) - 1)) {
-                $this->applyFilterIn($queryBuilder, $field, $value);
+                $this->applyFilterIn($queryBuilder, $field, $value, $query);
                 continue;
             }
 
@@ -206,12 +195,12 @@ class Doctrine implements DriverInterface
                 switch(strtolower($filterType)) {
                     case FilterInterface::FILTER_IN:
                         !is_array($filterValue) and $filterValue = [ $filterValue ];
-                        $this->applyFilterIn($queryBuilder, $field, $filterValue);
+                        $this->applyFilterIn($queryBuilder, $field, $filterValue, $query);
                         break;
 
                     case FilterInterface::FILTER_NOT_IN:
                         !is_array($filterValue) and $filterValue = [ $filterValue ];
-                        $this->applyFilterNotIn($queryBuilder, $field, $filterValue);
+                        $this->applyFilterNotIn($queryBuilder, $field, $filterValue, $query);
                         break;
 
                     case FilterInterface::FILTER_LESS_THAN:
@@ -247,20 +236,20 @@ class Doctrine implements DriverInterface
         return $this;
     }
 
-    private function applyFilterIn(QueryBuilder $queryBuilder, string $field, array $value)
+    private function applyFilterIn(QueryBuilder $queryBuilder, string $field, array $value, Query $query)
     {
         $paramName = 'FILTER_IN_' . $field;
         $field = $this->escapeFieldName($field);
         $queryBuilder->andWhere($queryBuilder->expr()->in($field, ':' . $paramName));
-        $queryBuilder->setParameter($paramName, $value, Connection::PARAM_STR_ARRAY);
+        $queryBuilder->setParameter($paramName, $value, $this->getDoctrineParamType($field, $query));
     }
 
-    private function applyFilterNotIn(QueryBuilder $queryBuilder, string $field, array $value)
+    private function applyFilterNotIn(QueryBuilder $queryBuilder, string $field, array $value, Query $query)
     {
         $paramName = 'FILTER_NOT_IN_' . $field;
         $field = $this->escapeFieldName($field);
         $queryBuilder->andWhere($queryBuilder->expr()->notIn($field, ':' . $paramName));
-        $queryBuilder->setParameter($paramName, $value, Connection::PARAM_STR_ARRAY);
+        $queryBuilder->setParameter($paramName, $value, $this->getDoctrineParamType($field, $query));
     }
 
     private function applyFilterGreaterThanEqual(QueryBuilder $queryBuilder, string $field, $value)
@@ -305,8 +294,18 @@ class Doctrine implements DriverInterface
 
     private function escapeFieldName(string $field) : string
     {
-        return in_array($field, $this->reservedWords)
+        return in_array(strtolower($field), $this->reservedWords)
             ? '`' . $field . '`'
             : $field;
+    }
+
+    private function getDoctrineParamType(string $field, Query $query) : int
+    {
+        $type = $query->schema->getFieldType($field);
+
+        return in_array($type, [ FieldInterface::TYPE_INT, FieldInterface::TYPE_FLOAT ], true)
+            ? Connection::PARAM_INT_ARRAY
+            : Connection::PARAM_STR_ARRAY
+        ;
     }
 }

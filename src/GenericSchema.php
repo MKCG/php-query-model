@@ -12,6 +12,7 @@ abstract class GenericSchema
     protected $types = [];
     private $relations = [];
     private $configurations = [];
+    private $definitions = [];
 
     public static function make(string $setType = '', string $alias = '')
     {
@@ -58,6 +59,28 @@ abstract class GenericSchema
             : [];
     }
 
+    public function getFieldType(string $name) : ?string
+    {
+        return isset($this->definitions[$name]['type'])
+            ? $this->definitions[$name]['type']
+            : null;
+    }
+
+    public function isFilterable(string $name) : bool
+    {
+        return !empty($this->definitions[$name]['filterable']);
+    }
+
+    public function isSortable(string $name) : bool
+    {
+        return !empty($this->definitions[$name]['sortable']);
+    }
+
+    public function isAggregatable(string $name) : bool
+    {
+        return !empty($this->definitions[$name]['aggregatable']);
+    }
+
     public function getRelation(string $name) : array
     {
         return $this->relations[$name] ?? [];
@@ -73,13 +96,47 @@ abstract class GenericSchema
         return $this->configurations;
     }
 
-    public function initConfigurations() : self
+    public function init() : self
+    {
+        $this
+            ->initConfigurations()
+            ->initRelations()
+            ->initFields()
+        ;
+
+        return $this;
+    }
+
+    protected function initFields() : self
     {
         return $this;
     }
 
-    public function initRelations() : self
+    protected function initConfigurations() : self
     {
+        return $this;
+    }
+
+    protected function initRelations() : self
+    {
+        return $this;
+    }
+
+    protected function setFieldDefinition(
+        string $name,
+        string $type,
+        bool $filterable = false,
+        bool $sortable = false,
+        bool $aggregatable = false
+    ) : self
+    {
+        $this->definitions[$name] = [
+            'type' => $type,
+            'filterable' => $filterable,
+            'sortable' => $sortable,
+            'aggregatable' => $aggregatable,
+        ];
+
         return $this;
     }
 
