@@ -7,6 +7,8 @@ use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\ResultBuilderInterface;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\AggregationInterface;
+use MKCG\Model\DBAL\Mapper\Field;
 
 use Ehann\RedisRaw\RedisRawClientInterface;
 use Ehann\RediSearch\Query\Builder;
@@ -37,15 +39,18 @@ class Redisearch implements DriverInterface
             $queryBuilder->sortBy($sort[0], $sort[1]);
         }
 
-        $search = '*';
-
-        if (!empty($query->filters)) {
-            $search = $this->applyFilters($queryBuilder, $query);
-        }
+        $search = !empty($query->filters)
+            ? $this->applyFilters($query)
+            : '*';
 
         $redisResult = $queryBuilder->search($search, true);
         $result = $resultBuilder->build($redisResult->getDocuments(), $query);
         $result->setCount($redisResult->getCount());
+
+        if (!empty($query->aggregations)) {
+            $aggregations = $this->aggregate($query);
+            $result->setAggregations($aggregations);
+        }
 
         if ($query->scroll !== null) {
             if (!isset($query->scroll->data['totalLimit'])) {
@@ -62,7 +67,59 @@ class Redisearch implements DriverInterface
         return $result;
     }
 
-    private function applyFilters(Builder $queryBuilder, Query $query)
+    private function aggregate(Query $query)
+    {
+        $facets = [];
+
+        foreach ($query->aggregations as $config) {
+            switch ($config['type']) {
+                case AggregationInterface::AGG_FACET:
+                    $facets[$config['field']] = $this->makeFacet($query, $config['field'], $config);
+                    break;
+
+                default:
+                    throw new \Exception("Aggregation not supported : " . $config['type']);
+            }
+        }
+
+        return [
+            'facets' => $facets,
+        ];
+    }
+
+    private function makeFacet(Query $query, string $field, array $config)
+    {
+        $clonedQuery = clone $query;
+
+        if (isset($clonedQuery->filters[$field])) {
+            unset($clonedQuery->filters[$field]);
+        }
+
+        $search = !empty($clonedQuery->filters)
+            ? $this->applyFilters($clonedQuery)
+            : '*';
+
+        $facet = (new Index($this->client))
+            ->setIndexName($query->name)
+            ->makeAggregateBuilder()
+            ->groupBy($field)
+            ->count()
+            ->sortBy('count', false)
+            ->limit($config['offset'] ?: 0, $config['limit'] ?: 10)
+            ->search($search, true)
+        ;
+
+        $type = $query->schema->getFieldType($field);
+
+        return array_map(function($value) use ($field, $type) {
+            return [
+                'name' => Field::formatValue($type, $field, $value[$field]),
+                'count' => (int) $value['count']
+            ];
+        }, $facet->getDocuments());
+    }
+
+    private function applyFilters(Query $query)
     {
         $search = [];
         $notIn = [];

@@ -117,7 +117,7 @@ Features supported by driver
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
-| Redisearch        | YES        | YES        | YES      | WIP          | YES   |
+| Redisearch        | YES        | YES        | YES      | YES          | YES   |
 | MongoDB           | YES        | YES        | YES      | WIP          | YES   |
 | Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
 | Redis             | YES        | WIP        | NO       | NO           | NO    |
@@ -327,7 +327,7 @@ Work In progress
 | Feature              | Description                                                 |
 | -------------------- | ----------------------------------------------------------- |
 | Elasticsearch Driver |                                                             |
-| Aggregations         |                                                             |
+| Aggregations         | Facets implemented for Redisearch                           |
 | Callable validation  | Validate callable arguments using Reflection and PHP tokens |
 
 Backlog

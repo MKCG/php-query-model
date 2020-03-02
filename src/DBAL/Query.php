@@ -3,7 +3,7 @@
 namespace MKCG\Model\DBAL;
 
 use MKCG\Model\Model;
-use MKCG\Model\GenericSchema;
+use MKCG\Model\SchemaInterface;
 
 class Query
 {
@@ -23,7 +23,7 @@ class Query
     public $scroll = null;
     public $schema;
 
-    public static function make(Model $model, GenericSchema $schema, array $criteria) : self
+    public static function make(Model $model, SchemaInterface $schema, array $criteria) : self
     {
         $query = new static();
 
@@ -35,6 +35,10 @@ class Query
 
         if (isset($criteria['filters'])) {
             $query->filters = $criteria['filters'];
+        }
+
+        if (isset($criteria['aggregations'])) {
+            $query->aggregations = $criteria['aggregations'];
         }
 
         if (isset($criteria['callable_filters'])) {

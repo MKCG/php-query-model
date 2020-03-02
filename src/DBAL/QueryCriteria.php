@@ -98,10 +98,7 @@ class QueryCriteria
             $this->criteria[$this->currentCollection]['aggregations'] = [];
         }
 
-        $this->criteria[$this->currentCollection]['aggregations'][] = [
-            'type' => $aggType,
-            'config' => $config
-        ];
+        $this->criteria[$this->currentCollection]['aggregations'][] = [ 'type' => $aggType ] + $config;
 
         return $this;
     }

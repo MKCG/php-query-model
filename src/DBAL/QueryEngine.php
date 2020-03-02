@@ -4,7 +4,7 @@ namespace MKCG\Model\DBAL;
 
 use MKCG\Model\DBAL\Drivers\DriverInterface;
 use MKCG\Model\Model;
-use MKCG\Model\GenericSchema;
+use MKCG\Model\SchemaInterface;
 use MKCG\Model\DBAL\Runtime\BehaviorNoCrash;
 use MKCG\Model\DBAL\Runtime\BehaviorInterface;
 
@@ -64,6 +64,12 @@ class QueryEngine
             throw new \LogicException("Scroll batch size must be > 0 to be able to scroll");
         }
 
+        foreach ($criteria as $key => $config) {
+            if (isset($config['aggregations'])) {
+                unset($config['aggregations']);
+            }
+        }
+
         $limit = $criteria[$alias]['limit'] ?? null;
         $criteria[$alias]['limit'] = $scrollBatchSize;
 
@@ -106,6 +112,7 @@ class QueryEngine
     private function doQuery(Model $model, array $criteria, bool $includeSubModels = true) : Result
     {
         $result = null;
+        $alias = $model->getAlias();
 
         if (empty($this->drivers)) {
             $result = $this->behavior->noDriver($model);
@@ -122,7 +129,6 @@ class QueryEngine
             if (!isset($this->drivers[$driverName])) {
                 $result = $this->behavior->unknownDriver($model, $driverName);
             } else {
-                $alias = $model->getAlias();
                 $options = isset($criteria[$alias]['options'])
                     ? $criteria[$alias]['options']
                     : [];
@@ -134,6 +140,12 @@ class QueryEngine
 
                 $query = Query::make($model, $schema, ['options' => $options] + ($criteria[$alias] ?: []));
                 $result = $this->behavior->search($model, $query, $this->drivers[$driverName], $this->resultBuilder);
+            }
+        }
+
+        foreach ($criteria as $key => $value) {
+            if (isset($value['aggregations'])) {
+                unset($value['aggregations']);
             }
         }
 
@@ -170,7 +182,7 @@ class QueryEngine
         return $result;
     }
 
-    private function includeSubModels(Result $result, Model $model, GenericSchema $schema, array $criteria)
+    private function includeSubModels(Result $result, Model $model, SchemaInterface $schema, array $criteria)
     {
         $included = $model->getWith();
 

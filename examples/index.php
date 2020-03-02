@@ -4,6 +4,7 @@ require __DIR__ . '/vendor/autoload.php';
 
 use MKCG\Examples\SocialNetwork\Schema;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\AggregationInterface;
 use MKCG\Model\DBAL\QueryCriteria;
 use MKCG\Model\DBAL\QueryEngine;
 use MKCG\Model\DBAL\Query;
@@ -61,21 +62,25 @@ function searchCustomersOrders(QueryEngine $engine)
         ->forCollection('customers_orders')
             ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 15)
             ->addFilter('addresses_countries', FilterInterface::FILTER_FULLTEXT_MATCH, 'Mexico')
+            ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'price', 'limit' => 3])
+            ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'currency', 'limit' => 3])
+            ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'vat', 'limit' => 3])
+            ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'credit_card_type', 'limit' => 3])
+            ->addAggregation(AggregationInterface::AGG_FACET, ['field' => 'customer_id', 'limit' => 3])
+            ->setLimit(10)
         ;
 
     $count = 0;
 
     foreach ($engine->scroll($model, $criteria, 100) as $customerOrder) {
         $count++;
-
-        if ($count % 100 === 0) {
-            echo sprintf("Scrolled over %d customer orders\n", $count);
-        }
-
-        echo json_encode($customerOrder, JSON_PRETTY_PRINT) . "\n\n";
     }
 
     echo sprintf("Scrolled over %d customer orders\n", $count);
+
+    $results = $engine->query($model, $criteria);
+
+    echo json_encode($results, JSON_PRETTY_PRINT) . "\n\n";
 }
 
 
@@ -616,7 +621,7 @@ function indexOrdersIntoSearchEngines(QueryEngine $engine, PredisAdapter $redisC
                 'customer_email' => $item['customer']['email'],
                 'products_ids' => implode(',', array_column($item['products'], '_id')),
                 'addresses_ids' => implode(',', array_column($item['customer']['addresses'] ?? [], 'id')),
-                'addresses_countries' => implode(', ', array_column($item['customer']['addresses'] ?? [], 'country')),
+                'addresses_countries' => implode(',', array_column($item['customer']['addresses'] ?? [], 'country')),
             ];
         })
         ->load(function(iterable $bulk) use ($orderIndex) {

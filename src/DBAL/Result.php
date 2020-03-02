@@ -2,13 +2,14 @@
 
 namespace MKCG\Model\DBAL;
 
-class Result
+class Result implements \JsonSerializable
 {
     private $content;
     private $count;
+    private $aggregations = [];
     private $includedIdsFormatter;
 
-    public static function make(array $content, string $entityClass)
+    public static function make(iterable $content, string $entityClass)
     {
         $result = new static();
         $result->content = array_map(function($item) use ($entityClass) {
@@ -22,6 +23,17 @@ class Result
     {
         $this->count = $count;
         return $this;
+    }
+
+    public function setAggregations(iterable $aggregations) : self
+    {
+        $this->aggregations = $aggregations;
+        return $this;
+    }
+
+    public function getAggregations() : iterable
+    {
+        return $this->aggregations;
     }
 
     public function getCount() : ?int
@@ -51,5 +63,14 @@ class Result
         }
 
         return [];
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'content' => $this->content,
+            'count' => $this->count,
+            'aggregations' => $this->aggregations
+        ];
     }
 }

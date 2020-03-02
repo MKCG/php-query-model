@@ -2,7 +2,7 @@
 
 namespace MKCG\Model;
 
-abstract class GenericSchema
+abstract class GenericSchema implements SchemaInterface
 {
     protected $driverName = '';
     protected $name = '';
@@ -14,7 +14,7 @@ abstract class GenericSchema
     private $configurations = [];
     private $definitions = [];
 
-    public static function make(string $setType = '', string $alias = '')
+    public static function make(string $setType = '', string $alias = '') : Model
     {
         return new Model(static::class, $setType, $alias);
     }
@@ -37,11 +37,6 @@ abstract class GenericSchema
     public function getPrimaryKeys() : array
     {
         return $this->primaryKeys;
-    }
-
-    public function getFilterableFields() : array
-    {
-        return $this->filterableFields;
     }
 
     public function getFields(string $type) : array
