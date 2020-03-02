@@ -37,4 +37,26 @@ class GenericEntity implements \ArrayAccess, \JsonSerializable
     {
         return $this->content;
     }
+
+    public function toArray()
+    {
+        return $this->valueToArray($this->content);
+    }
+
+    private function valueToArray(array $fields)
+    {
+        $content = [];
+
+        foreach ($fields as $key => $value) {
+            if (is_object($value) && is_a($value, GenericEntity::class)) {
+                $content[$key] = $value->toArray();
+            } else if (!is_array($value)) {
+                $content[$key] = $value;
+            } else {
+                $content[$key] = $this->valueToArray($value);
+            }
+        }
+
+        return $content;
+    }
 }

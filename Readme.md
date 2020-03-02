@@ -98,7 +98,7 @@ $engine = (new QueryEngine('mysql'))
 | Document-oriented database | MongoDB       | Driver for MongoDB 3.6+                                                 |
 | Relational database        | Doctrine      | Doctrine DBAL Adapter (MySQL, MariaDB are supported, other might not)   |
 | Search engine              | Elasticsearch | Driver for Elasticsearch 5+ (Work in progress)                          |
-| Search engine              | Redisearch    | Driver for Redisearch (Work in progress)                                |
+| Search engine              | Redisearch    | Driver for redisearch                                                   |
 | File reader                | CsvReader     |                                                                         |
 | HTTP                       | Http          | Interact with remote url (Work in progress)                             |
 | HTTP                       | HttpRobot     | Parse robots.txt from remote url (Work in progress)                     |
@@ -117,7 +117,7 @@ Features supported by driver
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
-| Redisearch        | YES        | WIP        | WIP      | WIP          | WIP   |
+| Redisearch        | YES        | YES        | YES      | WIP          | YES   |
 | MongoDB           | YES        | YES        | YES      | WIP          | YES   |
 | Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
 | Redis             | YES        | WIP        | NO       | NO           | NO    |
@@ -179,17 +179,17 @@ Constants are defined by the interface **MKCG\Model\DBAL\FilterInterface**
 Filters supported by driver
 ---------------------------
 
-| Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                           | CUSTOM |
-| ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------- | ------ |
-| Htp           | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | WIP    |
-| HttpRobot     | NO  | NO     | NO  | NO  | NO  | NO  | NO                              | NO     |
-| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
-| Elasticsearch | YES | YES    | YES | YES | YES | YES | YES                             | WIP    |
-| MongoDB       | YES | YES    | YES | YES | YES | YES | YES                             | YES    |
-| Redisearch    |     |        |     |     |     |     |                                 | WIP    |
-| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
-| RssReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
-| SitemapReader | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"   | YES    |
+| Driver        | IN  | NOT IN | GT  | GTE | LT  | LTE | MATCH                                      | CUSTOM |
+| ------------- | --- | ------ | --- | --- | --- | --- | ------------------------------------------ | ------ |
+| Http          | NO  | NO     | NO  | NO  | NO  | NO  | NO                                         | NO     |
+| HttpRobot     | NO  | NO     | NO  | NO  | NO  | NO  | NO                                         | NO     |
+| Doctrine      | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"              | YES    |
+| Elasticsearch | YES | YES    | YES | YES | YES | YES | YES , using elasticsearch `match` filter   | WIP    |
+| MongoDB       | YES | YES    | YES | YES | YES | YES | YES , using mongodb `$text` operator       | YES    |
+| Redisearch    | YES | YES    | YES | YES | YES | YES | YES , using redisearch `search` syntax     | NO     |
+| CsvReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"              | YES    |
+| RssReader     | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"              | YES    |
+| SitemapReader | YES | YES    | YES | YES | YES | YES | Interpreted as LIKE "%value%"              | YES    |
 
 
 ## CUSTOM filter type
@@ -327,7 +327,6 @@ Work In progress
 | Feature              | Description                                                 |
 | -------------------- | ----------------------------------------------------------- |
 | Elasticsearch Driver |                                                             |
-| Redisearch Driver    |                                                             |
 | Aggregations         |                                                             |
 | Content type         | Define the type of each schema property                     |
 | Callable validation  | Validate callable arguments using Reflection and PHP tokens |
