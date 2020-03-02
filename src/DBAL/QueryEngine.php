@@ -238,6 +238,10 @@ class QueryEngine
                 );
             }
 
+            $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] = array_values(
+                $criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN]
+            );
+
             if ($criteria[$alias]['filters'][$field][FilterInterface::FILTER_IN] === []) {
                 return;
             }

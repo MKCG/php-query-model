@@ -152,11 +152,11 @@ class MongoDB implements DriverInterface
 
                 switch ($type) {
                     case FilterInterface::FILTER_IN:
-                        $filters[$field]['$in'] = $value;
+                        $filters[$field]['$in'] = array_values($value);
                         break;
 
                     case FilterInterface::FILTER_NOT_IN:
-                        $filters[$field]['$nin'] = $value;
+                        $filters[$field]['$nin'] = array_values($value);
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
