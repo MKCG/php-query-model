@@ -552,8 +552,11 @@ FIELD;
             case FieldInterface::TYPE_STRING:
                 return 'FieldInterface::TYPE_STRING';
 
+            case FieldInterface::TYPE_ENUM:
+                return 'FieldInterface::TYPE_ENUM';
+
             default:
-                return '';
+                return "''";
         }
     }
 }
