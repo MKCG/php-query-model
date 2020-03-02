@@ -40,6 +40,10 @@ final class ETL
         $done = 0;
 
         foreach ($this->content as $item) {
+            foreach ($this->transformers as $transformer) {
+                $item = $transformer($item);
+            }
+
             $bulk[] = $item;
 
             $trigger = isset($bulk[$this->size - 1])
@@ -49,7 +53,7 @@ final class ETL
                 continue;
             }
 
-            $this->push($this->applyTransformations($bulk));
+            $this->push($bulk);
 
             $done += count($bulk);
             $lastTime = microtime(true);
@@ -57,20 +61,11 @@ final class ETL
         }
 
         if ($bulk !== []) {
-            $this->push($this->applyTransformations($bulk));
+            $this->push($bulk);
             $done += count($bulk);
         }
 
         return $done;
-    }
-
-    private function applyTransformations(iterable $bulk)
-    {
-        foreach ($this->transformers as $transformer) {
-            $bulk = array_map($transformer, $bulk);
-        }
-
-        return $bulk ?: [];
     }
 
     private function push(iterable $bulk)
