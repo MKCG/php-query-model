@@ -12,13 +12,10 @@ use MKCG\Model\DBAL\Drivers\Adapters;
 use MKCG\Model\DBAL\CallableOptionValidator;
 use MKCG\Model\ETL;
 
-$mongoClient = new MongoDB\Client('mongodb://root:password@mongodb');
+use Ehann\RedisRaw\PredisAdapter;
 
-$redisClient = new \Predis\Client([
-    'scheme' => 'tcp',
-    'host' => 'redisearch',
-    'port' => 6379
-]);
+$mongoClient = new MongoDB\Client('mongodb://root:password@mongodb');
+$redisClient = (new PredisAdapter())->connect('redisearch', 6379);
 
 $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
     'user' => 'root',
@@ -29,8 +26,6 @@ $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
 
 $fixturePath = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 
-createFakeData($sqlConnection, $mongoClient, $fixturePath . DIRECTORY_SEPARATOR);
-
 $engine = (new QueryEngine('mysql'))
     ->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql')
     ->registerDriver(new Drivers\CsvReader($fixturePath), 'csv')
@@ -40,6 +35,8 @@ $engine = (new QueryEngine('mysql'))
     ->registerDriver(new Drivers\HttpRobot(new Adapters\Guzzle), 'http_robot')
     ->registerDriver(new Drivers\MongoDB($mongoClient), 'mongodb')
 ;
+
+createFakeData($sqlConnection, $mongoClient, $redisClient, $fixturePath . DIRECTORY_SEPARATOR, $engine);
 
 $startedAt = microtime(true);
 
@@ -63,9 +60,7 @@ function pipelineEtl(QueryEngine $engine)
             ->addFilter('sku.color', FilterInterface::FILTER_IN, ['aqua', 'purple'])
         ;
 
-    $iterator = $engine->scroll($model, $criteria, 100);
-
-    $pushed = ETL::extract($engine->scroll($model, $criteria, 100), 1000, 500)
+    $pushed = ETL::extract($engine->scroll($model, $criteria, 200), 1000, 500)
         ->transform(function($item) {
             return [
                 'id' => $item['_id'],
@@ -229,8 +224,8 @@ function searchOrder(QueryEngine $engine)
 
     $orders = [];
 
-    // foreach ($engine->scroll($model, $criteria, 3) as $i => $order) {
-    foreach ($engine->query($model, $criteria)->getContent() as $i => $order) {
+    foreach ($engine->scroll($model, $criteria, 3) as $i => $order) {
+    // foreach ($engine->query($model, $criteria)->getContent() as $i => $order) {
         $orders[] = $order;
     }
 
@@ -269,7 +264,7 @@ function searchUsers(QueryEngine $engine)
     }
 }
 
-function createFakeData(\Doctrine\DBAL\Connection $connection, \MongoDB\Client $mongo, string $fixturePath)
+function createFakeData(\Doctrine\DBAL\Connection $connection, \MongoDB\Client $mongo, PredisAdapter $redisClient, string $fixturePath, QueryEngine $engine)
 {
     $faker = \Faker\Factory::create();
 
@@ -459,6 +454,7 @@ function createFakeData(\Doctrine\DBAL\Connection $connection, \MongoDB\Client $
     }
 
     fclose($csvOrderHandler);
+    indexOrdersIntoSearchEngines($engine, $redisClient);
 }
 
 function createDatabaseSchema(\Doctrine\DBAL\Connection $connection, array $schema)
@@ -533,4 +529,77 @@ function createDatabaseSchema(\Doctrine\DBAL\Connection $connection, array $sche
 
         $connection->exec($statement);
     }
+}
+
+function indexOrdersIntoSearchEngines(QueryEngine $engine, PredisAdapter $redisClient)
+{
+    $orderIndex = (new \Ehann\RediSearch\Index($redisClient))->setIndexName('customers_orders');
+
+    $orderIndex
+        ->addTagField('order_id', true)
+        ->addNumericField('price', true)
+        ->addNumericField('vat', true)
+        ->addTagField('currency', true)
+        ->addTagField('credit_card_type', true)
+        ->addTagField('credit_card_number', true)
+        ->addTagField('customer_id', true)
+        ->addTextField('customer_firstname')
+        ->addTextField('customer_lastname')
+        ->addTextField('customer_email')
+        ->addTagField('products_ids', true, false, ',')
+        ->addTagField('addresses_ids', true, false, ',')
+        ->addTextField('addresses_countries');
+
+    try {
+        $orderIndex->drop();
+    } catch (\Exception $e) {
+
+    }
+
+    $orderIndex->create();
+
+    $model = Schema\Order::make('default', 'order')
+        ->with(Schema\Product::make())
+        ->with(Schema\User::make()
+            ->with(Schema\Address::make())
+        )
+    ;
+
+    $criteria = (new QueryCriteria())
+        ->forCollection('order')
+            ->addOption('filepath', __DIR__ . DIRECTORY_SEPARATOR . 'fixtures' . DIRECTORY_SEPARATOR . 'orders.csv')
+            ->addOption('filepath', 'orders.csv')
+        ;
+
+    $pushed = ETL::extract($engine->scroll($model, $criteria, 5), 500, 500)
+        ->transform(function($item) {
+            return $item->toArray();
+        })
+        ->transform(function($item) {
+            return [
+                'order_id' => $item['id'],
+                'price' => $item['price'],
+                'vat' => $item['vat'],
+                'currency' => $item['currency'],
+                'credit_card_type' => $item['credit_card_type'],
+                'credit_card_number' => $item['credit_card_number'],
+                'customer_id' => $item['customer']['id'],
+                'customer_firstname' => $item['customer']['firstname'],
+                'customer_lastname' => $item['customer']['lastname'],
+                'customer_email' => $item['customer']['email'],
+                'products_ids' => implode(',', array_column($item['products'], '_id')),
+                'addresses_ids' => implode(',', array_column($item['customer']['addresses'] ?? [], 'id')),
+                'addresses_countries' => implode(', ', array_column($item['customer']['addresses'] ?? [], 'country')),
+            ];
+        })
+        ->load(function(iterable $bulk) use ($orderIndex) {
+            foreach ($bulk as $document) {
+                $orderIndex->add($document);
+            }
+
+            echo sprintf("[ETL] Redisearch - Indexing %d elements\n", count($bulk));
+        })
+        ->run();
+
+    echo sprintf("[ETL] Indexed %d elements\n", $pushed);
 }

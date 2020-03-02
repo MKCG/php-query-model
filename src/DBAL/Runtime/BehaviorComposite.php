@@ -31,11 +31,11 @@ class BehaviorComposite implements BehaviorInterface
 
     public function unknownDriver(Model $model, string $driverName) : Result
     {
-        return $this->behavior->unknownDriver($model, $driverName);
+        return $this->behaviorUnknownDriver->unknownDriver($model, $driverName);
     }
 
     public function search(Model $model, Query $query, DriverInterface $driver, ResultBuilderInterface $resultBuilder) : Result
     {
-        return $this->behavior->search($model, $query, $driver, $resultBuilder);
+        return $this->behaviorSearch->search($model, $query, $driver, $resultBuilder);
     }
 }

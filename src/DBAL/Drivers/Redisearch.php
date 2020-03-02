@@ -59,21 +59,21 @@ class Redisearch implements DriverInterface
                     $value = [ $value ];
                 }
 
+                if (in_array($type, [FilterInterface::FILTER_GREATER_THAN, FilterInterface::FILTER_LESS_THAN])) {
+                    $value = '(' . $value;
+                }
+
                 switch ($type) {
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
                         $search[] = sprintf("@%s:%s", $this->escape($field), $this->escape($value));
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
-                        $value += self::$numericPrecision;
-
                     case FilterInterface::FILTER_GREATER_THAN_EQUAL:
                         $search[] = sprintf("@%s:[%f +inf]", $this->escape($field), $this->escape($value));
                         break;
 
                     case FilterInterface::FILTER_LESS_THAN:
-                        $value -= self::$numericPrecision;
-
                     case FilterInterface::FILTER_LESS_THAN_EQUAL:
                         $search[] = sprintf("@%s:[-inf %f]", $this->escape($field), $this->escape($value));
                         break;
