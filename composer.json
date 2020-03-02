@@ -10,8 +10,13 @@
     "authors": [
         {
             "name": "Kévin Masseix",
-            "role": "Architect",
+            "role": "Creator",
             "email": "masseix.kevin@gmail.com"
+        },
+        {
+            "name": "Mounir R'Quiba",
+            "role": "Contributor",
+            "email": "mounir.rquiba@gmail.com"
         }
     ],
     "keywords": [
