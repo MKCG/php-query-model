@@ -2,6 +2,7 @@
 
 namespace MKCG\Model\DBAL\Drivers;
 
+use MKCG\Model\FieldInterface;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\ResultBuilderInterface;
@@ -13,7 +14,6 @@ use Ehann\RediSearch\Index;
 
 class Redisearch implements DriverInterface
 {
-    private static $numericPrecision = 0.000001;
     private $client;
 
     public function __construct(RedisRawClientInterface $client)
@@ -69,6 +69,8 @@ class Redisearch implements DriverInterface
 
         foreach ($query->filters as $field => $filter) {
             foreach ($filter as $type => $value) {
+                $this->assertFilterable($query, $field, $type);
+
                 if (in_array($type, [FilterInterface::FILTER_IN, FilterInterface::FILTER_NOT_IN]) && !is_array($value)) {
                     $value = [ $value ];
                 }
@@ -116,11 +118,30 @@ class Redisearch implements DriverInterface
         return trim(implode(' ', $search) . ' ' . implode(' ', $notIn));
     }
 
+    private function assertFilterable(Query $query, string $field, string $filterType)
+    {
+        if (!$query->schema->isFilterable($field)) {
+            throw new \Exception("Field is not filterable : " . $field);
+        }
+
+        $fieldType = $query->schema->getFieldType($field);
+
+        if (in_array($filterType, FilterInterface::RANGE_FILTERS)) {
+            if (!in_array($fieldType, FieldInterface::NUMERIC_TYPES)) {
+                throw new \Exception("Range filters operations can not be applied to : " . $field);
+            }
+        } else if (in_array($filterType, FilterInterface::SET_FILTERS)) {
+            if ($fieldType !== FieldInterface::TYPE_ENUM) {
+                throw new \Exception("Tag filters can not be applied to : " . $field);
+            }
+        }
+    }
+
     private function escape(string $text) : string
     {
         return str_replace(
-            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|'],
-            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|'],
+            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|', '%' ],
+            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|', '\%'],
             $text
         );
     }

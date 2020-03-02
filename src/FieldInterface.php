@@ -11,4 +11,9 @@ interface FieldInterface
     const TYPE_FLOAT    = 'float';
     const TYPE_INT      = 'int';
     const TYPE_STRING   = 'string';
+
+    const NUMERIC_TYPES = [
+        self::TYPE_INT,
+        self::TYPE_FLOAT
+    ];
 }

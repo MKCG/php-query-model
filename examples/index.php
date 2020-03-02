@@ -60,8 +60,7 @@ function searchCustomersOrders(QueryEngine $engine)
     $criteria = (new QueryCriteria())
         ->forCollection('customers_orders')
             ->addFilter('price', FilterInterface::FILTER_GREATER_THAN, 15)
-            ->addFilter('customer_firstname', FilterInterface::FILTER_FULLTEXT_MATCH, '%%Jayce%%')
-            ->setLimit(10)
+            ->addFilter('addresses_countries', FilterInterface::FILTER_FULLTEXT_MATCH, 'Mexico')
         ;
 
     $count = 0;
