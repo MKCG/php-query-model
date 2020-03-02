@@ -29,7 +29,7 @@ $sqlConnection = \Doctrine\DBAL\DriverManager::getConnection([
 
 $fixturePath = __DIR__ . DIRECTORY_SEPARATOR . 'fixtures';
 
-createFakeData($sqlConnection, $fixturePath . DIRECTORY_SEPARATOR);
+createFakeData($sqlConnection, $mongoClient, $fixturePath . DIRECTORY_SEPARATOR);
 
 $engine = (new QueryEngine('mysql'))
     ->registerDriver(new Drivers\Doctrine($sqlConnection), 'mysql')
