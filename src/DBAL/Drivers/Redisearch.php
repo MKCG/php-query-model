@@ -102,6 +102,10 @@ class Redisearch implements DriverInterface
 
     private function escape(string $text) : string
     {
-        return str_replace(['-', '@', ':'], ['\-', '\@', '\:'], $text);
+        return str_replace(
+            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|'],
+            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|'],
+            $text
+        );
     }
 }
