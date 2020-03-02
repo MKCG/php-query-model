@@ -63,19 +63,6 @@ class QueryCriteria
         return $this;
     }
 
-    public function addCustomFilter(string $name) : self
-    {
-        $this->assert();
-
-        if (!isset($this->criteria[$this->currentCollection]['custom_filters'])) {
-            $this->criteria[$this->currentCollection]['custom_filters'] = [];
-        }
-
-        $this->criteria[$this->currentCollection]['custom_filters'][] = $name;
-
-        return $this;
-    }
-
     public function addCallableFilter(callable $callable) : self
     {
         $this->assert();
