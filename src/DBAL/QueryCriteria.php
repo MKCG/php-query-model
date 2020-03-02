@@ -17,6 +17,13 @@ class QueryCriteria
     private static $supportedAggregations = [
         AggregationInterface::AGG_TERMS_CARDINALITY,
         AggregationInterface::AGG_FACET,
+        AggregationInterface::AGG_AVERAGE,
+    ];
+
+    private static $fieldAwareAggregations = [
+        AggregationInterface::AGG_TERMS_CARDINALITY,
+        AggregationInterface::AGG_FACET,
+        AggregationInterface::AGG_AVERAGE,
     ];
 
     private static $arrayFilters = [
@@ -84,14 +91,10 @@ class QueryCriteria
             throw new \LogicException("Invalid aggregation type : " . $aggType);
         }
 
-        switch ($aggType) {
-            case AggregationInterface::AGG_FACET:
-            case AggregationInterface::AGG_TERMS_CARDINALITY:
-                if (empty($config['field']) || !is_string($config['field'])) {
-                    throw new \LogicException("Invalid aggregation field");
-                }
-
-                break;
+        if (in_array($aggType, self::$fieldAwareAggregations)) {
+            if (empty($config['field']) || !is_string($config['field'])) {
+                throw new \LogicException("Invalid aggregation field");
+            }
         }
 
         if (!isset($this->criteria[$this->currentCollection]['aggregations'])) {

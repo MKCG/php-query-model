@@ -48,7 +48,7 @@ class Redisearch implements DriverInterface
         $result->setCount($redisResult->getCount());
 
         if (!empty($query->aggregations)) {
-            $aggregations = $this->aggregate($query);
+            $aggregations = $this->aggregate($query, $search);
             $result->setAggregations($aggregations);
         }
 
@@ -67,14 +67,26 @@ class Redisearch implements DriverInterface
         return $result;
     }
 
-    private function aggregate(Query $query)
+    private function aggregate(Query $query, string $search)
     {
-        $facets = [];
+        $agg = [];
 
         foreach ($query->aggregations as $config) {
             switch ($config['type']) {
                 case AggregationInterface::AGG_FACET:
-                    $facets[$config['field']] = $this->makeFacet($query, $config['field'], $config);
+                    if (!isset($agg['facets'])) {
+                        $agg['facets'] = [];
+                    }
+
+                    $agg['facets'][$config['field']] = $this->makeFacet(clone $query, $config['field'], $config, $search);
+                    break;
+
+                case AggregationInterface::AGG_AVERAGE:
+                    if (!isset($agg['averages'])) {
+                        $agg['averages'] = [];
+                    }
+
+                    $agg['averages'][$config['field']] = $this->makeAverage(clone $query, $config['field'], $config, $search);
                     break;
 
                 default:
@@ -82,22 +94,45 @@ class Redisearch implements DriverInterface
             }
         }
 
-        return [
-            'facets' => $facets,
-        ];
+        return $agg;
     }
 
-    private function makeFacet(Query $query, string $field, array $config)
+    private function makeAverage(Query $query, string $field, array $config, string $search)
     {
-        $clonedQuery = clone $query;
+        $fields = $query->schema->getFields('');
 
-        if (isset($clonedQuery->filters[$field])) {
-            unset($clonedQuery->filters[$field]);
+        // Generate an invalid field
+        $groupBy = 'aqwzsx';
+
+        while (in_array($groupBy, $fields) || !empty($query->schema->getFieldType($groupBy))) {
+            $groupBy = substr(md5($groupBy), 0, 8);
         }
 
-        $search = !empty($clonedQuery->filters)
-            ? $this->applyFilters($clonedQuery)
-            : '*';
+        $avg = (new Index($this->client))
+            ->setIndexName($query->name)
+            ->makeAggregateBuilder()
+            ->groupBy('id')
+            ->avg($field)
+            ->search($search, true);
+
+        $avg = (float) current(array_column($avg->getDocuments(), 'avg_' . $field));
+
+        if (isset($config['decimal'])) {
+            $avg = round($avg, $config['decimal']);
+        }
+
+        return $avg;
+    }
+
+    private function makeFacet(Query $query, string $field, array $config, string $search)
+    {
+        if (isset($query->filters[$field])) {
+            unset($query->filters[$field]);
+
+            $search = !empty($query->filters)
+                ? $this->applyFilters($query)
+                : '*';
+        }
 
         $facet = (new Index($this->client))
             ->setIndexName($query->name)
