@@ -272,6 +272,24 @@ function pipelineEtl(QueryEngine $engine)
 }
 ```
 
+# Aggregations
+
+| NAME              | Description                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| TERMS             | Number of distinct elements by field , with the field filters considered by the aggregation   |
+| FACET             | Number of distinct elements by field , with the field filters excluded by the aggregation     |
+| AVERAGE           | Average value of a numeric field                                                              |
+| MIN               | Min value of a field                                                                          |
+| MAX               | Max value of a field                                                                          |
+
+
+Aggregrations supported
+-----------------------
+
+| Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     |
+| ---------- | --------- | -------- | --------- | ------- | ------- |
+| Redisearch | YES       | YES      | YES       | YES     | YES     |
+
 
 # Test and examples
 

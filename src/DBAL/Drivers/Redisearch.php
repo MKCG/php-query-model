@@ -73,7 +73,15 @@ class Redisearch implements DriverInterface
 
         foreach ($query->aggregations as $config) {
             switch ($config['type']) {
-                case AggregationInterface::AGG_FACET:
+                case AggregationInterface::TERMS:
+                    if (!isset($agg['terms'])) {
+                        $agg['terms'] = [];
+                    }
+
+                    $agg['terms'][$config['field']] = $this->makeTermsAgg($query, $config['field'], $config, $search);
+                    break;
+
+                case AggregationInterface::FACET:
                     if (!isset($agg['facets'])) {
                         $agg['facets'] = [];
                     }
@@ -81,7 +89,7 @@ class Redisearch implements DriverInterface
                     $agg['facets'][$config['field']] = $this->makeFacet(clone $query, $config['field'], $config, $search);
                     break;
 
-                case AggregationInterface::AGG_AVERAGE:
+                case AggregationInterface::AVERAGE:
                     if (!isset($agg['averages'])) {
                         $agg['averages'] = [];
                     }
@@ -89,7 +97,7 @@ class Redisearch implements DriverInterface
                     $agg['averages'][$config['field']] = $this->makeAverage(clone $query, $config['field'], $config, $search);
                     break;
 
-                case AggregationInterface::AGG_MIN:
+                case AggregationInterface::MIN:
                     if (!isset($agg['min'])) {
                         $agg['min'] = [];
                     }
@@ -97,7 +105,7 @@ class Redisearch implements DriverInterface
                     $agg['min'][$config['field']] = $this->makeMin(clone $query, $config['field'], $config, $search);
                     break;
 
-                case AggregationInterface::AGG_MAX:
+                case AggregationInterface::MAX:
                     if (!isset($agg['max'])) {
                         $agg['max'] = [];
                     }
@@ -173,7 +181,12 @@ class Redisearch implements DriverInterface
                 : '*';
         }
 
-        $facet = (new Index($this->client))
+        return $this->makeTermsAgg($query, $field, $config, $search);
+    }
+
+    private function makeTermsAgg(Query $query, string $field, array $config, string $search)
+    {
+        $terms = (new Index($this->client))
             ->setIndexName($query->name)
             ->makeAggregateBuilder()
             ->groupBy($field)
@@ -190,7 +203,7 @@ class Redisearch implements DriverInterface
                 'name' => Field::formatValue($type, $field, $value[$field]),
                 'count' => (int) $value['count']
             ];
-        }, $facet->getDocuments());
+        }, $terms->getDocuments());
     }
 
     private function applyFilters(Query $query)
