@@ -71,6 +71,8 @@ class Doctrine implements DriverInterface
         if ($query->scroll === null) {
             $count = $this->count(clone $queryBuilder);
             $result->setCount($count);
+        } else if (count($content) === 0) {
+            $query->scroll->stop();
         }
 
         return $result;
