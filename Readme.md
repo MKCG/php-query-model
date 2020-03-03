@@ -281,14 +281,15 @@ function pipelineEtl(QueryEngine $engine)
 | AVERAGE           | Average value of a numeric field                                                              |
 | MIN               | Min value of a field                                                                          |
 | MAX               | Max value of a field                                                                          |
+| QUANTILE          | Quantile value of a field                                                                     |
 
 
 Aggregrations supported
 -----------------------
 
-| Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     |
-| ---------- | --------- | -------- | --------- | ------- | ------- |
-| Redisearch | YES       | YES      | YES       | YES     | YES     |
+| Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     | QUANTILE  |
+| ---------- | --------- | -------- | --------- | ------- | ------- | --------- |
+| Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
 
 
 # Test and examples

@@ -71,6 +71,7 @@ function searchCustomersOrders(QueryEngine $engine)
             ->addAggregation(AggregationInterface::AVERAGE, ['field' => 'price', 'decimal' => 3])
             ->addAggregation(AggregationInterface::MIN, ['field' => 'price', 'decimal' => 3])
             ->addAggregation(AggregationInterface::MAX, ['field' => 'price', 'decimal' => 3])
+            ->addAggregation(AggregationInterface::QUANTILE, ['field' => 'price', 'quantile' => [ 5, 10, 20, 50, 80, 90, 95 ]])
             ->setLimit(10)
         ;
 

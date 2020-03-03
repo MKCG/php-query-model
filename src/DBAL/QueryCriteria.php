@@ -20,6 +20,7 @@ class QueryCriteria
         AggregationInterface::AVERAGE,
         AggregationInterface::MIN,
         AggregationInterface::MAX,
+        AggregationInterface::QUANTILE,
     ];
 
     private static $fieldAwareAggregations = [
@@ -28,6 +29,7 @@ class QueryCriteria
         AggregationInterface::AVERAGE,
         AggregationInterface::MIN,
         AggregationInterface::MAX,
+        AggregationInterface::QUANTILE,
     ];
 
     private static $arrayFilters = [

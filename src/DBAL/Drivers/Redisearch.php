@@ -94,7 +94,7 @@ class Redisearch implements DriverInterface
                         $agg['averages'] = [];
                     }
 
-                    $agg['averages'][$config['field']] = $this->makeAverage(clone $query, $config['field'], $config, $search);
+                    $agg['averages'][$config['field']] = $this->makeAverage($query, $config['field'], $config, $search);
                     break;
 
                 case AggregationInterface::MIN:
@@ -102,7 +102,7 @@ class Redisearch implements DriverInterface
                         $agg['min'] = [];
                     }
 
-                    $agg['min'][$config['field']] = $this->makeMin(clone $query, $config['field'], $config, $search);
+                    $agg['min'][$config['field']] = $this->makeMin($query, $config['field'], $config, $search);
                     break;
 
                 case AggregationInterface::MAX:
@@ -110,7 +110,15 @@ class Redisearch implements DriverInterface
                         $agg['max'] = [];
                     }
 
-                    $agg['max'][$config['field']] = $this->makeMax(clone $query, $config['field'], $config, $search);
+                    $agg['max'][$config['field']] = $this->makeMax($query, $config['field'], $config, $search);
+                    break;
+
+                case AggregationInterface::QUANTILE:
+                    if (!isset($agg['quantiles'])) {
+                        $agg['quantiles'] = [];
+                    }
+
+                    $agg['quantiles'][$config['field']] = $this->makeQuantiles($query, $config['field'], $config, $search);
                     break;
 
                 default:
@@ -119,6 +127,32 @@ class Redisearch implements DriverInterface
         }
 
         return $agg;
+    }
+
+    private function makeQuantiles(Query $query, string $field, array $config, string $search) : array
+    {
+        if (!isset($config['quantile'])) {
+            throw new \Exception("'quantile' configuration is missing");
+        }
+
+        $values = is_array($config['quantile'])
+            ? $config['quantile']
+            : [ $config['quantile'] ];
+
+        $quantiles = [];
+        $type = $query->schema->getFieldType($field);
+
+        foreach ($values as $value) {
+            $result = $this->makeBuilderAggGroupByUnknown($query)
+                ->quantile($field, $value / 100)
+                ->search($search, true);
+
+            $result = current(array_column($result->getDocuments(), 'quantile_' . $field));
+
+            $quantiles[] = Field::formatValue($type, $field, $result);
+        }
+
+        return $quantiles;
     }
 
     private function makeAverage(Query $query, string $field, array $config, string $search) : float

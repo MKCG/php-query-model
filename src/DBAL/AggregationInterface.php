@@ -9,4 +9,5 @@ interface AggregationInterface
     const AVERAGE = 'average';
     const MIN = 'min';
     const MAX = 'max';
+    const QUANTILE = 'quantile';
 }
