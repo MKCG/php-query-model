@@ -291,7 +291,7 @@ class QueryEngine
                 $filterIn
             );
 
-            if ($criteria['alias']['filters'][$firstKey][FilterInterface::FILTER_IN] === []) {
+            if ($criteria[$alias]['filters'][$firstKey][FilterInterface::FILTER_IN] === []) {
                 continue;
             }
 
