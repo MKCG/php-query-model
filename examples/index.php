@@ -140,6 +140,10 @@ function searchProducts(QueryEngine $engine)
 
                 return $filters;
             })
+            ->addAggregation(AggregationInterface::TERMS, ['field' => 'society'])
+            ->addAggregation(AggregationInterface::MIN, ['field' => 'society'])
+            ->addAggregation(AggregationInterface::MAX, ['field' => 'society'])
+            ->addAggregation(AggregationInterface::QUANTILE, ['field' => 'society', 'quantile' => [ 5, 10, 20, 50, 80, 90, 95 ]])
             ->addOption('case_sensitive', false)
             ->addSort('sku.color', 'DESC')
             ->addSort('name', 'ASC')
@@ -157,6 +161,9 @@ function searchProducts(QueryEngine $engine)
     }
 
     echo "Products scrolled : " . $found . "\n\n";
+
+    $results = $engine->query($model, $criteria);
+    echo json_encode($results, JSON_PRETTY_PRINT) . "\n\n";
 }
 
 function searchGithubRobot(QueryEngine $engine)

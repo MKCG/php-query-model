@@ -7,7 +7,9 @@ use ArrayObject;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\AggregationInterface;
 use MKCG\Model\DBAL\ResultBuilderInterface;
+use MKCG\Model\DBAL\Mapper\Field;
 
 use MongoDB\Client;
 use MongoDB\Collection;
@@ -89,11 +91,152 @@ class MongoDB implements DriverInterface
 
         $results->setCount($count);
 
+        if (!empty($query->aggregations) && !$isScroll) {
+            $results->setAggregations($this->aggregate($query, $collection, $filters, $count));
+        }
+
         if ($isScroll && $count <= $query->limit + $query->offset) {
             $query->scroll->stop();
         }
 
         return $results;
+    }
+
+    private function aggregate(Query $query, $collection, array $filters, int $count) : array
+    {
+        $aggregations = [];
+
+        foreach ($query->aggregations as $aggregation) {
+            switch ($aggregation['type']) {
+                case AggregationInterface::TERMS:
+                    if (!isset($aggregations['terms'])) {
+                        $aggregations['terms'] = [];
+                    }
+
+                    $aggregations['terms'][$aggregation['field']] = $this->aggregateTerms(
+                        $query,
+                        $collection,
+                        $aggregation['field'],
+                        $aggregation
+                    );
+
+                    break;
+
+                case AggregationInterface::MIN:
+                    if (!isset($aggregations['min'])) {
+                        $aggregations['min'] = [];
+                    }
+
+                    $aggregations['min'][$aggregation['field']] = $this->aggregateTermPos(
+                        $query,
+                        $collection,
+                        $aggregation['field'],
+                        $aggregation,
+                        1
+                    );
+
+                    break;
+
+                case AggregationInterface::MAX:
+                    if (!isset($aggregations['max'])) {
+                        $aggregations['max'] = [];
+                    }
+
+                    $aggregations['max'][$aggregation['field']] = $this->aggregateTermPos(
+                        $query,
+                        $collection,
+                        $aggregation['field'],
+                        $aggregation,
+                        -1
+                    );
+
+                    break;
+
+                case AggregationInterface::QUANTILE:
+                    if (!isset($aggregations['quantiles'])) {
+                        $aggregations['quantiles'] = [];
+                    }
+
+                    $quantiles = [];
+
+                    foreach ($aggregation['quantile'] as $quantile) {
+                        $quantiles[] = $this->aggregateTermPos(
+                            $query,
+                            $collection,
+                            $aggregation['field'],
+                            $aggregation,
+                            1,
+                            $quantile / 100 * $count
+                        );
+                    }
+
+                    $aggregations['quantiles'][$aggregation['field']] = $quantiles;
+
+                    break;
+
+
+                default:
+                    throw new \Exception("Aggregation type not supported : " . $aggregation['type']);
+            }
+        }
+
+        return $aggregations;
+    }
+
+    private function aggregateTerms(Query $query, $collection, string $field, array $aggregation)
+    {
+        $options = $this->makeOptions($query->context ?? []);
+        $textOptions = array_intersect_key($options, array_fill_keys(self::$textOptions, null));
+        $searchOptions = array_diff_key($options, array_fill_keys(self::$textOptions, null));
+        $filters = $this->makeFilters($query, $textOptions);
+
+        $pipeline = [
+            [ '$group' => [ '_id'=> '$' . $field, 'count' => [ '$sum' => 1 ] ] ],
+            [ '$sort' => [ 'count' => -1 ] ],
+            [ '$skip' => $aggregation['offset'] ?? 0 ],
+            [ '$limit' => $aggregation['limit'] ?? 10 ]
+        ];
+
+        if (!empty($filters)) {
+            array_unshift($pipeline, ['$match' => $filters]);
+        }
+
+        $type = $query->schema->getFieldType($field);
+
+        return array_map(function($item) use ($type, $field) {
+            return [
+                'name' => Field::formatValue($type, $field, $item['_id']),
+                'count' => (int) $item['count']
+            ];
+        }, $collection->aggregate($pipeline)->toArray());
+    }
+
+    private function aggregateTermPos(Query $query, $collection, string $field, array $aggregation, int $order, int $skip = 0)
+    {
+        $options = $this->makeOptions($query->context ?? []);
+        $textOptions = array_intersect_key($options, array_fill_keys(self::$textOptions, null));
+        $searchOptions = array_diff_key($options, array_fill_keys(self::$textOptions, null));
+        $filters = $this->makeFilters($query, $textOptions);
+
+        $pipeline = [
+            [ '$group' => [ '_id'=> '$' . $field ] ],
+            [ '$sort' => [ '_id' => $order ] ],
+            [ '$skip' => $skip ],
+            [ '$limit' => 1 ]
+        ];
+
+        if (!empty($filters)) {
+            array_unshift($pipeline, ['$match' => $filters]);
+        }
+
+        $type = $query->schema->getFieldType($field);
+
+        $values = array_map(function($item) {
+            return $item['_id'];
+        }, $collection->aggregate($pipeline)->toArray());
+
+        $value = array_shift($values);
+        return Field::formatValue($type, $field, $value);
     }
 
     private function scrollSearch(Query $query) : array
