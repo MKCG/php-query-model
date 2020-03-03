@@ -17,5 +17,5 @@ interface SchemaInterface
     public function getRelation(string $name) : array;
     public function getRelations() : array;
     public function getConfigurations() : array;
-    public function init() : self;
+    public function init() : SchemaInterface;
 }

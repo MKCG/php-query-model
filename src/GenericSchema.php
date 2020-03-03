@@ -91,7 +91,7 @@ abstract class GenericSchema implements SchemaInterface
         return $this->configurations;
     }
 
-    public function init() : self
+    public function init() : SchemaInterface
     {
         $this->initConfigurations();
         $this->initRelations();
