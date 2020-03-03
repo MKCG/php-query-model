@@ -323,7 +323,7 @@ CLASS;
             $fileContent .= <<<CLASS
 
 
-    public function initFields() : self
+    protected function initFields()
     {
         \$this${fieldDefinitions}
         ;
@@ -338,7 +338,7 @@ CLASS;
             $fileContent .= <<<CLASS
 
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         \$this${relations}
         ;

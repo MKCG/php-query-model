@@ -29,7 +29,7 @@ class Rss extends GenericSchema
         ],
     ];
 
-    public function initConfigurations() : self
+    protected function initConfigurations()
     {
         $this->configurations = [
             'http' => (new Http())

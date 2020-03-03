@@ -24,14 +24,14 @@ class User extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this->addRelation('addresses', Address::class, 'id', 'id_user', true);
         $this->addRelation('posts', Post::class, 'id', 'id_user', true);
         return $this;
     }
 
-    protected function initFields() : self
+    protected function initFields()
     {
         return $this
             ->setFieldDefinition('id', FieldInterface::TYPE_INT, true)

@@ -26,7 +26,7 @@ class Product extends GenericSchema
         ],
     ];
 
-    protected function initFields() : self
+    protected function initFields()
     {
         return $this
             ->setFieldDefinition('_id', FieldInterface::TYPE_INT, true)

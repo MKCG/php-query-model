@@ -17,7 +17,7 @@ class HackerNewsTopStory extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this->addRelation('story', HackerNewsStory::class, 'id', 'id', false);
         return $this;

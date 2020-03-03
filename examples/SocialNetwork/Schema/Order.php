@@ -27,7 +27,7 @@ class Order extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this
             ->addRelation('customer', User::class, 'id_user', 'id', false)

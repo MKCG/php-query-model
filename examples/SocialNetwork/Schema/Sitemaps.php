@@ -31,7 +31,7 @@ class Sitemaps extends GenericSchema
         ],
     ];
 
-    public function initConfigurations() : self
+    protected function initConfigurations()
     {
         $this->addConfiguration('http', (new Http())
                 ->addHeader('User-Agent', 'Kévin Masseix | Looking for opportunities | https://github.com/MKCG')

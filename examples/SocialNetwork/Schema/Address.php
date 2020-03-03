@@ -22,7 +22,7 @@ class Address extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this->addRelation('owner', User::class, 'id_user', 'id', false);
         return $this;

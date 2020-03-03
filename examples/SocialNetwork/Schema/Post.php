@@ -22,13 +22,13 @@ class Post extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this->addRelation('author', User::class, 'id_user', 'id', false);
         return $this;
     }
 
-    protected function initFields() : self
+    protected function initFields()
     {
         return $this
             ->setFieldDefinition('id', FieldInterface::TYPE_INT, true, true)

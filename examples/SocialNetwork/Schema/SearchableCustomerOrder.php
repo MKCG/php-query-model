@@ -31,13 +31,13 @@ class SearchableCustomerOrder extends GenericSchema
         ],
     ];
 
-    public function initRelations() : self
+    protected function initRelations()
     {
         $this->addRelation('customer', User::class, 'customer_id', 'id', false);
         return $this;
     }
 
-    protected function initFields() : self
+    protected function initFields()
     {
         return $this
             ->setFieldDefinition('order_id', FieldInterface::TYPE_ENUM, true)
