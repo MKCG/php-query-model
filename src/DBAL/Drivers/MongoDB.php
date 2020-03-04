@@ -174,6 +174,19 @@ class MongoDB implements DriverInterface
 
                     break;
 
+                case AggregationInterface::AVERAGE:
+                    if (!isset($aggregations['average'])) {
+                        $aggregations['average'] = [];
+                    }
+
+                    $aggregations['average'][$aggregation['field']] = $this->aggregateAverage(
+                        $query,
+                        $collection,
+                        $aggregation['field'],
+                        $aggregation
+                    );
+
+                    break;
 
                 default:
                     throw new \Exception("Aggregation type not supported : " . $aggregation['type']);
@@ -181,6 +194,33 @@ class MongoDB implements DriverInterface
         }
 
         return $aggregations;
+    }
+
+    private function aggregateAverage(Query $query, $collection, string $field, array $config)
+    {
+        $options = $this->makeOptions($query->context ?? []);
+        $textOptions = array_intersect_key($options, array_fill_keys(self::$textOptions, null));
+        $searchOptions = array_diff_key($options, array_fill_keys(self::$textOptions, null));
+        $filters = $this->makeFilters($query, $textOptions);
+
+        $pipeline = [
+            [ '$match' => [ $field => [ '$exists' => true ] ] ],
+            [ '$group' => [ '_id'=> null, 'average' => [ '$avg' => '$' . $field ] ] ],
+        ];
+
+        if (!empty($filters)) {
+            array_unshift($pipeline, ['$match' => $filters]);
+        }
+
+        $type = $query->schema->getFieldType($field);
+
+        $result = $collection->aggregate($pipeline)->toArray();
+        $result = array_column($result, 'average');
+        $result = array_shift($result);
+
+        return isset($config['decimal'])
+            ? round($result, $config['decimal'])
+            : $result;
     }
 
     private function aggregateTerms(Query $query, $collection, string $field, array $aggregation)

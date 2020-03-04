@@ -140,6 +140,7 @@ function searchProducts(QueryEngine $engine)
 
                 return $filters;
             })
+            ->addAggregation(AggregationInterface::AVERAGE, ['field' => '_id'])
             ->addAggregation(AggregationInterface::TERMS, ['field' => 'society'])
             ->addAggregation(AggregationInterface::MIN, ['field' => 'society'])
             ->addAggregation(AggregationInterface::MAX, ['field' => 'society'])

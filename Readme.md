@@ -290,7 +290,7 @@ Aggregrations supported
 | Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     | QUANTILE  |
 | ---------- | --------- | -------- | --------- | ------- | ------- | --------- |
 | Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
-| MongoDB    | YES       | WIP      | WIP       | YES     | YES     | YES       |
+| MongoDB    | YES       | WIP      | YES       | YES     | YES     | YES       |
 
 
 # Test and examples
