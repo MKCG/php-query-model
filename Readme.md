@@ -118,7 +118,7 @@ Features supported by driver
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
 | Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
 | Redisearch        | YES        | YES        | YES      | YES          | YES   |
-| MongoDB           | YES        | YES        | YES      | WIP          | YES   |
+| MongoDB           | YES        | YES        | YES      | YES          | YES   |
 | Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
 | Redis             | YES        | WIP        | NO       | NO           | NO    |
 | ScyllaDB          | YES        | WIP        | WIP      |              | WIP   |
@@ -289,6 +289,7 @@ Aggregrations supported
 
 | Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     | QUANTILE  |
 | ---------- | --------- | -------- | --------- | ------- | ------- | --------- |
+| CsvReader  | NO        | NO       | NO        | YES     | YES     | NO        |
 | Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
 | MongoDB    | YES       | YES      | YES       | YES     | YES     | YES       |
 
@@ -347,7 +348,7 @@ Work In progress
 | Feature              | Description                                                 |
 | -------------------- | ----------------------------------------------------------- |
 | Elasticsearch Driver |                                                             |
-| Aggregations         | Facets implemented for Redisearch                           |
+| Aggregations         | Implemented for Redisearch and MongoDB                      |
 | Callable validation  | Validate callable arguments using Reflection and PHP tokens |
 
 Backlog
