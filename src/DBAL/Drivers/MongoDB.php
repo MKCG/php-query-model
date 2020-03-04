@@ -108,6 +108,26 @@ class MongoDB implements DriverInterface
 
         foreach ($query->aggregations as $aggregation) {
             switch ($aggregation['type']) {
+                case AggregationInterface::FACET:
+                    if (!isset($aggregations['terms'])) {
+                        $aggregations['terms'] = [];
+                    }
+
+                    $clonedQuery = clone $query;
+
+                    if (isset($clonedQuery->filters[$aggregation['field']])) {
+                        unset($clonedQuery->filters[$aggregation['field']]);
+                    }
+
+                    $aggregations['facets'][$aggregation['field']] = $this->aggregateTerms(
+                        $query,
+                        $collection,
+                        $aggregation['field'],
+                        $aggregation
+                    );
+
+                    break;
+
                 case AggregationInterface::TERMS:
                     if (!isset($aggregations['terms'])) {
                         $aggregations['terms'] = [];

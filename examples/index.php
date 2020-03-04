@@ -140,8 +140,10 @@ function searchProducts(QueryEngine $engine)
 
                 return $filters;
             })
-            ->addAggregation(AggregationInterface::AVERAGE, ['field' => '_id'])
+            ->addAggregation(AggregationInterface::AVERAGE, ['field' => '_id', 'decimal' => 2])
             ->addAggregation(AggregationInterface::TERMS, ['field' => 'society'])
+            ->addAggregation(AggregationInterface::FACET, ['field' => 'society'])
+            ->addAggregation(AggregationInterface::FACET, ['field' => 'sku.color'])
             ->addAggregation(AggregationInterface::MIN, ['field' => 'society'])
             ->addAggregation(AggregationInterface::MAX, ['field' => 'society'])
             ->addAggregation(AggregationInterface::QUANTILE, ['field' => 'society', 'quantile' => [ 5, 10, 20, 50, 80, 90, 95 ]])

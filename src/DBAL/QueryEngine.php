@@ -65,8 +65,8 @@ class QueryEngine
         }
 
         foreach ($criteria as $key => $config) {
-            if (isset($config['aggregations'])) {
-                unset($config['aggregations']);
+            if (isset($criteria[$key]['aggregations'])) {
+                unset($criteria[$key]['aggregations']);
             }
         }
 
@@ -144,8 +144,8 @@ class QueryEngine
         }
 
         foreach ($criteria as $key => $value) {
-            if (isset($value['aggregations'])) {
-                unset($value['aggregations']);
+            if (isset($criteria[$key]['aggregations'])) {
+                unset($criteria[$key]['aggregations']);
             }
         }
 
