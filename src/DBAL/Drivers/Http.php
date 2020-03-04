@@ -5,6 +5,7 @@ namespace MKCG\Model\DBAL\Drivers;
 use MKCG\Model\Configurations;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
+use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\ResultBuilderInterface;
 use MKCG\Model\DBAL\HttpRequest;
 use MKCG\Model\DBAL\HttpResponse;
@@ -44,6 +45,7 @@ class Http implements DriverInterface
     {
         return [
             'max_query_time',
+            'html_formatter',
             'json_formatter',
             'url',
             'uri',
@@ -139,6 +141,10 @@ class Http implements DriverInterface
                 return [ Mapper\Json::mapItem($json, $query->fields) ];
 
             case 'html':
+                if (!empty($query->context['options']['html_formatter'])) {
+                    return call_user_func($query->context['options']['html_formatter'], $response);
+                }
+
                 return [];
 
             default:
@@ -170,13 +176,17 @@ class Http implements DriverInterface
 
         $request->timeout = $timeout;
 
-        $request->url = !empty($options['url_generator'])
-            ? call_user_func($options['url_generator'], $query)
-            : ($options['url']
-                ?: ($configuration->getUrl()
-                    ?: $this->defaultUrl
-                )
-            );
+        if (!empty($options['url_generator'])) {
+            $request->url = call_user_func($options['url_generator'], $query);
+        } else if (!empty($options['url'])) {
+            $request->url = $options['url'];
+        } else if (!empty($query->filters['url'][FilterInterface::FILTER_IN])) {
+            $request->url = is_array($query->filters['url'][FilterInterface::FILTER_IN])
+                ? $query->filters['url'][FilterInterface::FILTER_IN][0]
+                : $query->filters['url'][FilterInterface::FILTER_IN];
+        } else {
+            $request->url = $configuration->getUrl() ?: $this->defaultUrl;
+        }
 
         $request->url = filter_var($request->url, FILTER_VALIDATE_URL);
 

@@ -22,7 +22,7 @@ class Guzzle implements HttpClientInterface
             : $request->options;
 
         $client = $this->client ?: new Client();
-        $request = $client->createRequest(
+        $guzzleRequest = $client->createRequest(
             $request->method,
             $request->url . $request->$uri,
             $request->headers,
@@ -30,12 +30,13 @@ class Guzzle implements HttpClientInterface
             $options
         );
 
-        $response = $client->send($request);
+        $response = $client->send($guzzleRequest);
 
         return new HttpResponse(
             $response->getStatusCode(),
             $response->getContentType(),
-            (string) $response->getBody()
+            (string) $response->getBody(),
+            $request
         );
     }
 }

@@ -354,12 +354,16 @@ class QueryEngine
             return $filters;
         }
 
+        if (!is_array($filters[FilterInterface::FILTER_IN])) {
+            $filters[FilterInterface::FILTER_IN] = [ $filters[FilterInterface::FILTER_IN] ];
+        }
+
         foreach ($toPush as $filterType => $values) {
             if (strtolower($filterType) !== FilterInterface::FILTER_IN) {
                 $filters[$filterType] = $values;
             } else if (!is_array($values) && !in_array($values, $filters[FilterInterface::FILTER_IN])) {
                 $filters[FilterInterface::FILTER_IN] = [];
-            } else if (is_array($values)) {
+            } else if (is_array($values) && $values !== []) {
                 $filters[FilterInterface::FILTER_IN] = array_intersect(
                     $filters[FilterInterface::FILTER_IN],
                     $values
