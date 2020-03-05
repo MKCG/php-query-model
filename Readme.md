@@ -110,21 +110,21 @@ Features supported by driver
 
 | Driver            | Scrollable | Filterable | Sortable | Aggregatable | Count |
 | ----------------- | ---------- | ---------- | -------- | ------------ | ----- |
-| Doctrine          | YES        | YES        | YES      | WIP          | YES   |
 | CsvReader         | YES        | YES        | NO       | YES          | YES   |
+| Doctrine          | YES        | YES        | YES      | YES          | YES   |
 | Http              | YES        | YES        | NO       | NO           | NO    |
 | HttpRobot         | YES        | NO         | NO       | NO           | NO    |
+| MongoDB           | YES        | YES        | YES      | YES          | YES   |
+| Redisearch        | YES        | YES        | YES      | YES          | YES   |
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
-| Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
-| Redisearch        | YES        | YES        | YES      | YES          | YES   |
-| MongoDB           | YES        | YES        | YES      | YES          | YES   |
+
 | Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
-| Redis             | YES        | WIP        | NO       | NO           | NO    |
-| ScyllaDB          | YES        | WIP        | WIP      |              | WIP   |
-| Cassandra         | YES        | WIP        | WIP      |              | WIP   |
-| Solr              | YES        | WIP        | WIP      | WIP          | WIP   |
+| Cassandra         | YES        | WIP        | WIP      | WIP          | WIP   |
+| Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
 | PostgreSQL        | YES        | WIP        | WIP      | WIP          | WIP   |
+| ScyllaDB          | YES        | WIP        | WIP      | WIP          | WIP   |
+| Solr              | YES        | WIP        | WIP      | WIP          | WIP   |
 
 
 Query criteria options
@@ -289,10 +289,10 @@ Aggregrations supported
 
 | Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     | QUANTILE  |
 | ---------- | --------- | -------- | --------- | ------- | ------- | --------- |
-| Doctrine   | NO        | NO       | YES       | YES     | YES     | YES       |
 | CsvReader  | NO        | NO       | YES       | YES     | YES     | NO        |
-| Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
+| Doctrine   | YES       | YES      | YES       | YES     | YES     | YES       |
 | MongoDB    | YES       | YES      | YES       | YES     | YES     | YES       |
+| Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
 
 
 # Test and examples
@@ -349,7 +349,6 @@ Work In progress
 | Feature              | Description                                                 |
 | -------------------- | ----------------------------------------------------------- |
 | Elasticsearch Driver |                                                             |
-| Aggregations         | Implemented for Redisearch and MongoDB                      |
 | Callable validation  | Validate callable arguments using Reflection and PHP tokens |
 
 Backlog
@@ -377,7 +376,6 @@ Database Drivers
 * \Illuminate\Eloquent (library used by Laravel)
 * Neo4J
 * PostgreSQL
-* Redis
 * ScyllaDB
 * Solr
 

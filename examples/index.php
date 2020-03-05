@@ -296,9 +296,10 @@ function searchUsers(QueryEngine $engine)
         ->forCollection('user')
             ->addFilter('status', FilterInterface::FILTER_IN, [ 2 , 3 , 5 , 7 ])
             ->addFilter('registered_at', FilterInterface::FILTER_GREATER_THAN_EQUAL, '2000-01-01')
-            ->addAggregation(AggregationInterface::AVERAGE, ['field' => 'status', 'decimal' => 2])
+            ->addAggregation(AggregationInterface::FACET, ['field' => 'status', 'limit' => 5])
+            ->addAggregation(AggregationInterface::FACET, ['field' => 'lastname', 'limit' => 5])
             ->addAggregation(AggregationInterface::TERMS, ['field' => 'status', 'offset' => 1, 'limit' => 2])
-            ->addAggregation(AggregationInterface::FACET, ['field' => 'firstname'])
+            ->addAggregation(AggregationInterface::AVERAGE, ['field' => 'status', 'decimal' => 2])
             ->addAggregation(AggregationInterface::MIN, ['field' => 'firstname'])
             ->addAggregation(AggregationInterface::MAX, ['field' => 'firstname'])
             ->addAggregation(AggregationInterface::QUANTILE, ['field' => 'firstname', 'quantile' => [ 10 , 40 , 60 , 90 ]])
@@ -312,8 +313,7 @@ function searchUsers(QueryEngine $engine)
     ;
 
     $users = $engine->query($model, $criteria);
-
-    echo json_encode($users->getContent(), JSON_PRETTY_PRINT) . "\n";
+    echo json_encode($users, JSON_PRETTY_PRINT) . "\n\n";
     echo "\nFound : " . $users->getCount() . " users\n";
 
     $iterator = $engine->scroll($model, $criteria);

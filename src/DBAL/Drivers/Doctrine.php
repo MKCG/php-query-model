@@ -43,7 +43,7 @@ class Doctrine implements DriverInterface
 
         $this
             ->selectFields($queryBuilder, $query)
-            ->applyFilters($queryBuilder, $query);
+            ->applyFilters($queryBuilder, $query, $query->filters);
 
         foreach ($query->sort as $sort) {
             $queryBuilder->addOrderBy($sort[0], $sort[1]);
@@ -180,9 +180,9 @@ class Doctrine implements DriverInterface
         return $this;
     }
 
-    private function applyFilters(QueryBuilder $queryBuilder, Query $query)
+    private function applyFilters(QueryBuilder $queryBuilder, Query $query, array $filters)
     {
-        foreach ($query->filters as $field => $value) {
+        foreach ($filters as $field => $value) {
             if (!is_array($value)) {
                 $this->applyFilterIn($queryBuilder, $field, [ $value ], $query);
                 continue;
@@ -370,52 +370,30 @@ class Doctrine implements DriverInterface
                         $aggregations['terms'] = [];
                     }
 
-                    $builder = clone $queryBuilder;
-                    $builder->resetQueryPart('orderBy');
-                    $builder->resetQueryPart('orderBy');
-                    $builder->setFirstResult(null);
-                    $builder->setMaxResults(null);
-
-                    $builder->select([ $config['field'] . ' as name' , 'COUNT(*) as count' ]);
-                    $builder->groupBy($config['field']);
-
-                    $sql = $builder->getSQL();
-
-                    foreach ($builder->getParameters() as $key => $value) {
-                        $value = is_array($value)
-                            ? implode(', ', array_map(function($value) {
-                                if (is_int($value) || strtolower($value) === 'null') {
-                                    return $value;
-                                }
-
-                                $value = str_replace('"', '\"', $value);
-                                return '"' . $value . '"';
-                            }, $value))
-                            : '"' . $value . '"';
-
-                        $sql = str_replace(':' . $key, $value, $sql);
-                    }
-
-                    $groupQuery = "SELECT name, count FROM (%s) AS T ORDER BY count DESC LIMIT %d, %d";
-                    $groupQuery = sprintf($groupQuery, $sql, $config['offset'] ?? 0, $config['limit'] ?? 10);
-
-                    $statement = $this->connection->query($groupQuery);
-
-                    if ($statement === false) {
-                        throw new \Exception("Aggregation failed");
-                    }
-
-                    $type = $query->schema->getFieldType($config['field']);
-                    $aggregations['terms'][$config['field']] = array_map(function($item) use ($type, $config) {
-                        return [
-                            'name' => Field::formatValue($type, $config['field'], $item['name']),
-                            'count' => (int) $item['count']
-                        ];
-                    }, $statement->fetchAll());
+                    $aggregations['terms'][$config['field']] = $this->aggregateByTerms(
+                        $query,
+                        clone $queryBuilder,
+                        $config['field'],
+                        $config['limit'] ?? 10,
+                        $config['offset'] ?? 0
+                    );
 
                     break;
 
                 case AggregationInterface::FACET:
+                    if (!isset($aggregations['facets'])) {
+                        $aggregations['facets'] = [];
+                    }
+
+                    $aggregations['facets'][$config['field']] = $this->aggregateByFacet(
+                        $query,
+                        $config['field'],
+                        $config['limit'] ?? 10,
+                        $config['offset'] ?? 0
+                    );
+
+                    break;
+
                 default:
                     throw new \Exception("Facet type not supported : " . $config['type']);
             }
@@ -423,6 +401,71 @@ class Doctrine implements DriverInterface
 
         $result->setAggregations($aggregations);
         return $this;
+    }
+
+    private function aggregateByFacet(Query $query, string $field, int $limit, int $offset)
+    {
+        $queryBuilder = $this->connection
+            ->createQueryBuilder()
+            ->from($query->name);
+
+        $filters = $query->filters;
+
+        if (isset($filters[$field])) {
+            unset($filters[$field]);
+        }
+
+        $this->applyFilters($queryBuilder, $query, $filters);
+        return $this->aggregateByTerms($query, $queryBuilder, $field, $limit, $offset);
+    }
+
+    private function aggregateByTerms(Query $query, QueryBuilder $builder, string $field, int $limit, int $offset)
+    {
+        $builder->resetQueryPart('orderBy');
+        $builder->resetQueryPart('orderBy');
+        $builder->setFirstResult(null);
+        $builder->setMaxResults(null);
+
+        $builder->select([ $field . ' as name' , 'COUNT(*) as count' ]);
+        $builder->groupBy($field);
+
+        $sql = $builder->getSQL();
+
+        foreach ($builder->getParameters() as $key => $value) {
+            if (is_array($value)) {
+                $value = array_map(function($value) {
+                    if (is_int($value) || strtolower($value) === 'null') {
+                        return $value;
+                    }
+
+                    return '"' . str_replace('"', '\"', $value) . '"';
+                }, $value);
+
+                $value = implode(', ', $value);
+            } else {
+                $value = '"' . $value . '"';
+            }
+
+            $sql = str_replace(':' . $key, $value, $sql);
+        }
+
+        $groupQuery = "SELECT name, count FROM (%s) AS T ORDER BY count DESC LIMIT %d, %d";
+        $groupQuery = sprintf($groupQuery, $sql, $offset, $limit);
+
+        $statement = $this->connection->query($groupQuery);
+
+        if ($statement === false) {
+            throw new \Exception("Aggregation failed");
+        }
+
+        $type = $query->schema->getFieldType($field);
+
+        return array_map(function($item) use ($type, $field) {
+            return [
+                'name' => Field::formatValue($type, $field, $item['name']),
+                'count' => (int) $item['count']
+            ];
+        }, $statement->fetchAll());
     }
 
     private function aggByFunction(QueryBuilder $queryBuilder, string $field, string $functionName)
