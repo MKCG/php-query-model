@@ -8,6 +8,7 @@ use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
 use MKCG\Model\DBAL\AggregationInterface;
 use MKCG\Model\DBAL\ResultBuilderInterface;
+use MKCG\Model\DBAL\Mapper\Field;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\FetchMode;
@@ -319,13 +320,15 @@ class Doctrine implements DriverInterface
         $aggregations = [];
 
         foreach ($query->aggregations as $config) {
+            $escapedFieldName = $this->escapeFieldName($config['field']);
+
             switch ($config['type']) {
                 case AggregationInterface::AVERAGE:
                     if (!isset($aggregations['averages'])) {
                         $aggregations['averages'] = [];
                     }
 
-                    $aggregations['averages'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'AVG');
+                    $aggregations['averages'][$config['field']] = $this->aggByFunction($queryBuilder, $escapedFieldName, 'AVG');
                     break;
 
                 case AggregationInterface::MIN:
@@ -333,7 +336,7 @@ class Doctrine implements DriverInterface
                         $aggregations['min'] = [];
                     }
 
-                    $aggregations['min'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'MIN');
+                    $aggregations['min'][$config['field']] = $this->aggByFunction($queryBuilder, $escapedFieldName, 'MIN');
                     break;
 
                 case AggregationInterface::MAX:
@@ -341,7 +344,7 @@ class Doctrine implements DriverInterface
                         $aggregations['max'] = [];
                     }
 
-                    $aggregations['max'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'MAX');
+                    $aggregations['max'][$config['field']] = $this->aggByFunction($queryBuilder, $escapedFieldName, 'MAX');
                     break;
 
                 case AggregationInterface::QUANTILE:
@@ -351,7 +354,7 @@ class Doctrine implements DriverInterface
 
                     $aggregations['quantiles'][$config['field']] = array_map(function($quantile) use ($result, $queryBuilder, $config) {
                         $builder = clone $queryBuilder;
-                        $builder->select($config['field']);
+                        $builder->select($escapedFieldName);
                         $builder->setFirstResult((int) ($result->getCount() * $quantile / 100));
                         $builder->setMaxResults(1);
                         $value = $builder->execute()->fetch();
@@ -363,6 +366,55 @@ class Doctrine implements DriverInterface
                     break;
 
                 case AggregationInterface::TERMS:
+                    if (!isset($aggregations['terms'])) {
+                        $aggregations['terms'] = [];
+                    }
+
+                    $builder = clone $queryBuilder;
+                    $builder->resetQueryPart('orderBy');
+                    $builder->resetQueryPart('orderBy');
+                    $builder->setFirstResult(null);
+                    $builder->setMaxResults(null);
+
+                    $builder->select([ $config['field'] . ' as name' , 'COUNT(*) as count' ]);
+                    $builder->groupBy($config['field']);
+
+                    $sql = $builder->getSQL();
+
+                    foreach ($builder->getParameters() as $key => $value) {
+                        $value = is_array($value)
+                            ? implode(', ', array_map(function($value) {
+                                if (is_int($value) || strtolower($value) === 'null') {
+                                    return $value;
+                                }
+
+                                $value = str_replace('"', '\"', $value);
+                                return '"' . $value . '"';
+                            }, $value))
+                            : '"' . $value . '"';
+
+                        $sql = str_replace(':' . $key, $value, $sql);
+                    }
+
+                    $groupQuery = "SELECT name, count FROM (%s) AS T ORDER BY count DESC LIMIT %d, %d";
+                    $groupQuery = sprintf($groupQuery, $sql, $config['offset'] ?? 0, $config['limit'] ?? 10);
+
+                    $statement = $this->connection->query($groupQuery);
+
+                    if ($statement === false) {
+                        throw new \Exception("Aggregation failed");
+                    }
+
+                    $type = $query->schema->getFieldType($config['field']);
+                    $aggregations['terms'][$config['field']] = array_map(function($item) use ($type, $config) {
+                        return [
+                            'name' => Field::formatValue($type, $config['field'], $item['name']),
+                            'count' => (int) $item['count']
+                        ];
+                    }, $statement->fetchAll());
+
+                    break;
+
                 case AggregationInterface::FACET:
                 default:
                     throw new \Exception("Facet type not supported : " . $config['type']);

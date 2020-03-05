@@ -288,15 +288,16 @@ function searchOrder(QueryEngine $engine)
 function searchUsers(QueryEngine $engine)
 {
     $model = Schema\User::make('default', 'user')
-        ->with(Schema\Address::make())
-        ->with(Schema\Post::make());
+        // ->with(Schema\Address::make())
+        // ->with(Schema\Post::make())
+    ;
 
     $criteria = (new QueryCriteria())
         ->forCollection('user')
             ->addFilter('status', FilterInterface::FILTER_IN, [ 2 , 3 , 5 , 7 ])
             ->addFilter('registered_at', FilterInterface::FILTER_GREATER_THAN_EQUAL, '2000-01-01')
             ->addAggregation(AggregationInterface::AVERAGE, ['field' => 'status', 'decimal' => 2])
-            ->addAggregation(AggregationInterface::TERMS, ['field' => 'firstname'])
+            ->addAggregation(AggregationInterface::TERMS, ['field' => 'status', 'offset' => 1, 'limit' => 2])
             ->addAggregation(AggregationInterface::FACET, ['field' => 'firstname'])
             ->addAggregation(AggregationInterface::MIN, ['field' => 'firstname'])
             ->addAggregation(AggregationInterface::MAX, ['field' => 'firstname'])
