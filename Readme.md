@@ -289,6 +289,7 @@ Aggregrations supported
 
 | Driver     | TERMS     | FACET    | AVERAGE   | MIN     | MAX     | QUANTILE  |
 | ---------- | --------- | -------- | --------- | ------- | ------- | --------- |
+| Doctrine   | NO        | NO       | YES       | YES     | YES     | YES       |
 | CsvReader  | NO        | NO       | YES       | YES     | YES     | NO        |
 | Redisearch | YES       | YES      | YES       | YES     | YES     | YES       |
 | MongoDB    | YES       | YES      | YES       | YES     | YES     | YES       |

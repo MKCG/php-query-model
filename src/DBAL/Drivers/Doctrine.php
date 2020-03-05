@@ -6,6 +6,7 @@ use MKCG\Model\FieldInterface;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
+use MKCG\Model\DBAL\AggregationInterface;
 use MKCG\Model\DBAL\ResultBuilderInterface;
 
 use Doctrine\DBAL\Connection;
@@ -71,6 +72,7 @@ class Doctrine implements DriverInterface
         if ($query->scroll === null) {
             $count = $this->count(clone $queryBuilder);
             $result->setCount($count);
+            $this->makeAggregations($result, $query, $queryBuilder);
         } else if (count($content) === 0) {
             $query->scroll->stop();
         }
@@ -306,5 +308,81 @@ class Doctrine implements DriverInterface
             ? Connection::PARAM_INT_ARRAY
             : Connection::PARAM_STR_ARRAY
         ;
+    }
+
+    private function makeAggregations(Result $result, Query $query, QueryBuilder $queryBuilder)
+    {
+        if (empty($query->aggregations)) {
+            return $this;
+        }
+
+        $aggregations = [];
+
+        foreach ($query->aggregations as $config) {
+            switch ($config['type']) {
+                case AggregationInterface::AVERAGE:
+                    if (!isset($aggregations['averages'])) {
+                        $aggregations['averages'] = [];
+                    }
+
+                    $aggregations['averages'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'AVG');
+                    break;
+
+                case AggregationInterface::MIN:
+                    if (!isset($aggregations['min'])) {
+                        $aggregations['min'] = [];
+                    }
+
+                    $aggregations['min'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'MIN');
+                    break;
+
+                case AggregationInterface::MAX:
+                    if (!isset($aggregations['max'])) {
+                        $aggregations['max'] = [];
+                    }
+
+                    $aggregations['max'][$config['field']] = $this->aggByFunction($queryBuilder, $config['field'], 'MAX');
+                    break;
+
+                case AggregationInterface::QUANTILE:
+                    if (!isset($aggregations['quantiles'])) {
+                        $aggregations['quantiles'] = [];
+                    }
+
+                    $aggregations['quantiles'][$config['field']] = array_map(function($quantile) use ($result, $queryBuilder, $config) {
+                        $builder = clone $queryBuilder;
+                        $builder->select($config['field']);
+                        $builder->setFirstResult((int) ($result->getCount() * $quantile / 100));
+                        $builder->setMaxResults(1);
+                        $value = $builder->execute()->fetch();
+
+                        return isset($value[$config['field']])
+                            ? $value[$config['field']]
+                            : null;
+                    }, $config['quantile']);
+                    break;
+
+                case AggregationInterface::TERMS:
+                case AggregationInterface::FACET:
+                default:
+                    throw new \Exception("Facet type not supported : " . $config['type']);
+            }
+        }
+
+        $result->setAggregations($aggregations);
+        return $this;
+    }
+
+    private function aggByFunction(QueryBuilder $queryBuilder, string $field, string $functionName)
+    {
+        $builder = clone $queryBuilder;
+        $builder->select($functionName . '(' . $this->escapeFieldName($field) . ') as value');
+        $builder->setFirstResult(0);
+        $builder->setMaxResults(1);
+        $value = $builder->execute()->fetch();
+
+        return isset($value['value'])
+            ? $value['value']
+            : null;
     }
 }
