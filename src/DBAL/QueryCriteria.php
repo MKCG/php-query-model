@@ -37,6 +37,24 @@ class QueryCriteria
         FilterInterface::FILTER_NOT_IN
     ];
 
+    const TYPE_BOOL = 'boolean';
+    const TYPE_CALLABLE = 'callable';
+    const TYPE_INT = 'int';
+    const TYPE_PATH = 'path';
+    const TYPE_URL = 'url';
+
+    private static $knownOptionsTypes = [
+        'allow_partial' => self::TYPE_BOOL,
+        'case_sensitive' => self::TYPE_BOOL,
+        'filepath' => self::TYPE_PATH,
+        'html_formatter' => self::TYPE_CALLABLE,
+        'json_formatter' => self::TYPE_CALLABLE,
+        'max_query_time' => self::TYPE_INT,
+        'multiple_requests' => self::TYPE_BOOL,
+        'url' => self::TYPE_URL,
+        'url_generator' => self::TYPE_CALLABLE,
+    ];
+
     private $criteria = [];
     private $currentCollection = '';
 
@@ -132,6 +150,45 @@ class QueryCriteria
     public function addOption(string $name, $value) : self
     {
         $this->assert();
+
+        if (isset(self::$knownOptionsTypes[$name])) {
+            switch (self::$knownOptionsTypes[$name]) {
+                case self::TYPE_BOOL:
+                    $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+
+                    if (is_bool($value) === false) {
+                        throw new \LogicException("Invalid boolean");
+                    }
+
+                    break;
+
+                case self::TYPE_CALLABLE:
+                    if (is_callable($value) === false) {
+                        throw new \LogicException("Invalid callable");
+                    }
+
+                    break;
+
+                case self::TYPE_INT:
+                    $value = filter_var($value, FILTER_VALIDATE_INT);
+
+                    if (is_int($value) === false) {
+                        throw new \LogicException("Invalid integer");
+                    }
+
+                    break;
+
+                case self::TYPE_PATH:
+                    break;
+
+                case self::TYPE_URL:
+                    if (filter_var($value, FILTER_VALIDATE_URL) === false) {
+                        throw new \LogicException("Invalid URL");
+                    }
+
+                    break;
+            }
+        }
 
         if (!isset($this->criteria[$this->currentCollection]['options'])) {
             $this->criteria[$this->currentCollection]['options'] = [];

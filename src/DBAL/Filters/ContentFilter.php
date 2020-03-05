@@ -119,7 +119,6 @@ class ContentFilter
 
                     default:
                         throw new \LogicException("Filter not supported yet");
-                        break;
                 }
             }
         }
