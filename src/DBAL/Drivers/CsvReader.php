@@ -5,8 +5,10 @@ namespace MKCG\Model\DBAL\Drivers;
 use MKCG\Model\DBAL\Query;
 use MKCG\Model\DBAL\Result;
 use MKCG\Model\DBAL\FilterInterface;
-use MKCG\Model\DBAL\Filters\ContentFilter;
+use MKCG\Model\DBAL\AggregationInterface;
 use MKCG\Model\DBAL\ResultBuilderInterface;
+use MKCG\Model\DBAL\Filters\ContentFilter;
+use MKCG\Model\DBAL\Mapper\Field;
 
 class CsvReader implements DriverInterface
 {
@@ -38,12 +40,13 @@ class CsvReader implements DriverInterface
         }
 
         $results = [];
+        $aggregations = [];
         $found = 0;
 
         if ($query->scroll !== null) {
-            list($results, $found) = $this->scrollResults($query, $handler, $header);
+            list($results, $found, $aggregations) = $this->scrollResults($query, $handler, $header);
         } else {
-            list($results, $found) = $this->listResults($query, $handler, $header);
+            list($results, $found, $aggregations) = $this->listResults($query, $handler, $header);
         }
 
         if (!empty($query->fields)) {
@@ -53,15 +56,24 @@ class CsvReader implements DriverInterface
             }, $results);
         }
 
-        return $resultBuilder
+        $items = $resultBuilder
             ->build($results, $query)
             ->setCount($found);
+
+        if (!empty($query->aggregations)) {
+            $items->setAggregations($aggregations);
+        }
+
+        return $items;
     }
 
     private function listResults(Query $query, $handler, array $header) : array
     {
         $results = [];
         $found = 0;
+        $agg = [];
+
+        $avgAggs = [];
 
         while (true) {
             $line = fgetcsv($handler);
@@ -75,6 +87,56 @@ class CsvReader implements DriverInterface
             if (ContentFilter::matchQuery($line, $query)) {
                 $found++;
 
+                if (!empty($query->aggregations)) {
+                    foreach ($query->aggregations as $config) {
+                        if (!isset($line[$config['field']])) {
+                            continue;
+                        }
+
+                        switch ($config['type']) {
+                            case AggregationInterface::AVERAGE:
+                                if (!isset($avgAggs[$config['field']])) {
+                                    $avgAggs[$config['field']] = [ 'sum' => 0, 'count' => 0 ];
+                                }
+
+                                $avgAggs[$config['field']]['sum'] += $line[$config['field']];
+                                $avgAggs[$config['field']]['count']++;
+
+                                break;
+
+                            case AggregationInterface::MIN:
+                                if (!isset($agg['min'])) {
+                                    $agg['min'] = [];
+                                }
+
+                                if (!isset($agg['min'][$config['field']])
+                                    || $agg['min'][$config['field']] > $line[$config['field']]) {
+                                    $agg['min'][$config['field']] = $line[$config['field']];
+                                }
+
+                                break;
+
+                            case AggregationInterface::MAX:
+                                if (!isset($agg['max'])) {
+                                    $agg['max'] = [];
+                                }
+
+                                if (!isset($agg['max'][$config['field']])
+                                    || $agg['max'][$config['field']] < $line[$config['field']]) {
+                                    $agg['max'][$config['field']] = $line[$config['field']];
+                                }
+
+                                break;
+
+                            case AggregationInterface::TERMS:
+                            case AggregationInterface::FACET:
+                            case AggregationInterface::QUANTILE:
+                            default:
+                                throw new \Exception("Facet type not supported : " . $config['type']);
+                        }
+                    }
+                }
+
                 if ($found <= $query->offset) {
                     continue;
                 }
@@ -87,7 +149,24 @@ class CsvReader implements DriverInterface
 
         fclose($handler);
 
-        return [ $results, $found ];
+        if (!empty($avgAggs)) {
+            $agg['averages'] = [];
+
+            foreach ($avgAggs as $field => $value) {
+                $agg['averages'][$field] = $value['sum'] / $value['count'];
+            }
+        }
+
+        foreach ([ 'min' , 'max' ] as $aggType) {
+            if (isset($agg[$aggType])) {
+                foreach ($agg[$aggType] as $field => $value) {
+                    $type = $query->schema->getFieldType($field);
+                    $agg[$aggType][$field] = Field::formatValue($type, $field, $value);
+                }
+            }
+        }
+
+        return [ $results, $found , $agg ];
     }
 
     private function scrollResults(Query $query, $handler, array $header) : array
@@ -117,7 +196,7 @@ class CsvReader implements DriverInterface
 
         $query->scroll->data['found'] = $found;
 
-        return [ $results , $found ];
+        return [ $results , $found , [] ];
     }
 
     private function getScrollParams(Query $query) : array

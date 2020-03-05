@@ -4,6 +4,7 @@ namespace MKCG\Examples\SocialNetwork\Schema;
 
 use MKCG\Model\GenericSchema;
 use MKCG\Model\GenericEntity;
+use MKCG\Model\FieldInterface;
 use MKCG\Model\DBAL\Result;
 
 class Order extends GenericSchema
@@ -35,6 +36,14 @@ class Order extends GenericSchema
         ;
 
         return $this;
+    }
+
+    protected function initFields()
+    {
+        return $this
+            ->setFieldDefinition('price', FieldInterface::TYPE_INT)
+            ->setFieldDefinition('vat', FieldInterface::TYPE_FLOAT)
+        ;
     }
 
     public static function extract(Result $result)

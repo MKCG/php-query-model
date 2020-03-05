@@ -256,6 +256,9 @@ function searchOrder(QueryEngine $engine)
             ->addCallableFilter(function(Query $query, array $rawOrder) {
                 return $rawOrder['price'] !== $rawOrder['vat'];
             })
+            ->addAggregation(AggregationInterface::MIN, ['field' => 'price', 'decimal' => 3])
+            ->addAggregation(AggregationInterface::MAX, ['field' => 'price', 'decimal' => 3])
+            ->addAggregation(AggregationInterface::AVERAGE, ['field' => 'price', 'decimal' => 3])
             ->setOffset(1)
             ->setLimit(2)
         ->forCollection('addresses')
@@ -270,6 +273,8 @@ function searchOrder(QueryEngine $engine)
         ;
 
     $orders = [];
+
+    echo json_encode($engine->query($model, $criteria), JSON_PRETTY_PRINT) . "\n\n";
 
     foreach ($engine->scroll($model, $criteria, 3) as $i => $order) {
     // foreach ($engine->query($model, $criteria)->getContent() as $i => $order) {
