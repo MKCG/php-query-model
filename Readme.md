@@ -49,7 +49,7 @@ foreach ($iterator as $user) {
 
 ```
 
-![Example](./Query Engine.svg)
+![Example](./query_engine.svg)
 
 ## Drivers definition
 
