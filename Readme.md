@@ -118,13 +118,12 @@ Features supported by driver
 | Redisearch        | YES        | YES        | YES      | YES          | YES   |
 | RssReader         | YES        | YES        | NO       | NO           | NO    |
 | SitemapReader     | YES        | YES        | NO       | NO           | NO    |
-
-| Algolia           | YES        | WIP        | WIP      | NO           | WIP   |
-| Cassandra         | YES        | WIP        | WIP      | WIP          | WIP   |
-| Elasticsearch     | YES        | YES        | YES      | WIP          | WIP   |
-| PostgreSQL        | YES        | WIP        | WIP      | WIP          | WIP   |
-| ScyllaDB          | YES        | WIP        | WIP      | WIP          | WIP   |
-| Solr              | YES        | WIP        | WIP      | WIP          | WIP   |
+| Algolia           |            |            |          |              |       |
+| Cassandra         |            |            |          |              |       |
+| Elasticsearch     |            |            |          |              |       |
+| PostgreSQL        |            |            |          |              |       |
+| ScyllaDB          |            |            |          |              |       |
+| Solr              |            |            |          |              |       |
 
 
 Query criteria options

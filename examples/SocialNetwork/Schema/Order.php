@@ -28,6 +28,13 @@ class Order extends GenericSchema
         ],
     ];
 
+    protected function initTransformers()
+    {
+        $this->addFieldTransformer('product_ids', 'csv');
+
+        return $this;
+    }
+
     protected function initRelations()
     {
         $this
@@ -51,13 +58,16 @@ class Order extends GenericSchema
         $productIds = array_map([self::class, 'extractProductIds'], $result->getContent());
         $productIds = array_merge(...$productIds);
         $productIds = array_unique($productIds);
+
         return ['_id' => $productIds ];
     }
 
     private static function extractProductIds(\ArrayAccess $order)
     {
-        $productIds = explode(',', $order['product_ids']);
-        $productIds = array_map(function($id) { return (int) $id; }, $productIds);
+        $productIds = array_map(function($id) {
+            return (int) $id;
+        }, $order['product_ids']);
+
         return array_unique($productIds);
     }
 

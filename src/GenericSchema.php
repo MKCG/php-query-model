@@ -13,6 +13,7 @@ abstract class GenericSchema implements SchemaInterface
     private $relations = [];
     private $configurations = [];
     private $definitions = [];
+    private $transformers = [];
 
     public static function make(string $setType = '', string $alias = '') : Model
     {
@@ -91,11 +92,17 @@ abstract class GenericSchema implements SchemaInterface
         return $this->configurations;
     }
 
+    public function getTransformers() : array
+    {
+        return $this->transformers;
+    }
+
     public function init() : SchemaInterface
     {
         $this->initConfigurations();
         $this->initRelations();
         $this->initFields();
+        $this->initTransformers();
 
         return $this;
     }
@@ -111,6 +118,11 @@ abstract class GenericSchema implements SchemaInterface
     }
 
     protected function initRelations()
+    {
+        return $this;
+    }
+
+    protected function initTransformers()
     {
         return $this;
     }
@@ -169,6 +181,13 @@ abstract class GenericSchema implements SchemaInterface
             'resolve_callback' => $resolver,
             'isCollection' => $isCollection
         ];
+
+        return $this;
+    }
+
+    protected function addFieldTransformer(string $field, string $transformer)
+    {
+        $this->transformers[$field] = $transformer;
 
         return $this;
     }
