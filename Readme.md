@@ -49,6 +49,8 @@ foreach ($iterator as $user) {
 
 ```
 
+![Example](./Query Engine.svg)
+
 ## Drivers definition
 
 Each `Driver` is responsible to perform queries on a single `datasource` (database, HTTP API, local files, ...) and must :
