@@ -135,7 +135,7 @@ class QueryEngine
 
                 $options = array_intersect_key(
                     $options + $this->optionDefaultValues,
-                    array_fill_keys($this->drivers[$driverName]->getSupportedOptions(), null)
+                    array_fill_keys($this->drivers[$driverName]->getSupportedOptions(), null) + ['name' => null]
                 );
 
                 $query = Query::make($model, $schema, ['options' => $options] + ($criteria[$alias] ?: []));
