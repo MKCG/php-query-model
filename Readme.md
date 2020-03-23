@@ -158,6 +158,7 @@ Result-based filterable drivers :
 | readConcern       | MongoDB                                  | https://docs.mongodb.com/manual/reference/read-concern/index.html             |
 | batchSize         | MongoDB                                  | https://docs.mongodb.com/manual/reference/method/cursor.batchSize/index.html  |
 | diacriticSensitive| MongoDB                                  | https://docs.mongodb.com/manual/reference/operator/query/text/index.html      |
+| name              | all                                      | Overrides the name defined into the SchemaInterface                           |
 
 When both `url_generator` and `url` are provided, then only `url_generator` is used.
 

@@ -28,7 +28,11 @@ class Query
         $query = new static();
 
         $query->fields = $schema->getFields($model->getSetType());
-        $query->name = $schema->getFullyQualifiedName();
+
+        $query->name = isset($criteria['options']['name'])
+            ? $criteria['options']['name']
+            : $schema->getFullyQualifiedName();
+
         $query->primaryKeys = $schema->getPrimaryKeys();
         $query->entityClass = $schema->getEntityClass();
         $query->schema = $schema;

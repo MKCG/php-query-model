@@ -31,7 +31,7 @@ class BehaviorRetry implements BehaviorInterface
     {
         $lastException;
 
-        for ($i = 0; $i < $this->retry; $i++) {
+        for ($i = 0; $i <= $this->retry; $i++) {
             try {
                 return $driver->search($query, $resultBuilder);
             } catch (\Exception $e) {
