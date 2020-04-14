@@ -15,6 +15,12 @@ class ResultBuilder implements ResultBuilderInterface
             return in_array($value, self::$transformers);
         });
 
+        foreach ($content as $i => $row) {
+            foreach ($row as $field => $value) {
+                $content[$i][$field] = Mapper\Field::formatValue($query->schema->getFieldType($field), $field, $value);
+            }
+        }
+
         if ($transformers !== []) {
             foreach ($content as $i => $row) {
                 foreach ($transformers as $field => $transformer) {
