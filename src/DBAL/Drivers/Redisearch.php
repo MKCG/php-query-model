@@ -255,7 +255,7 @@ class Redisearch implements DriverInterface
 
                 switch ($type) {
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
-                        $search[] = sprintf("@%s:%s", $this->escape($field), $this->escape($value));
+                        $search[] = sprintf("@%s:%s*", $this->escape($field), $this->escape($value));
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
