@@ -223,6 +223,7 @@ class Redisearch implements DriverInterface
         $terms = (new Index($this->client))
             ->setIndexName($query->name)
             ->makeAggregateBuilder()
+            ->apply("split(@" . $field . ")", $field)
             ->groupBy($field)
             ->count()
             ->sortBy('count', false)
