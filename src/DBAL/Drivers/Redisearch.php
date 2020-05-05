@@ -256,11 +256,27 @@ class Redisearch implements DriverInterface
 
                 switch ($type) {
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
-                        $searchFormat = $value[strlen($value) - 1] === ' '
-                            ? '@%s:%s'
-                            : '@%s:%s*';
+                        $wildcard = $value[strlen($value) - 1] !== ' ';
+                        $values = explode(' ', $value);
+                        $values = array_map('trim', $values);
+                        $values = array_map([$this, 'escape'], $values);
+                        $last = array_pop($values) . ($wildcard ? '*' : '');
 
-                        $search[] = sprintf($searchFormat, $this->escape($field), $this->escape($value));
+                        $values = array_map(function($value) {
+                            if (strlen($value) < 4) {
+                                return $value . '*';
+                            }
+                            return strlen($value) < 6
+                                ? '%' . $value . '%'
+                                : (strlen($value) < 8
+                                    ? '%%' . $value . '%%'
+                                    : '%%%' . $value . '%%%'
+                                );
+                        }, $values);
+
+                        array_push($values, $last);
+
+                        $search[] = '@' . $this->escape($field) . ':' . implode(' ', $values);
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
