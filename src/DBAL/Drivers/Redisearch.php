@@ -220,16 +220,20 @@ class Redisearch implements DriverInterface
 
     private function makeTermsAgg(Query $query, string $field, array $config, string $search)
     {
-        $terms = (new Index($this->client))
-            ->setIndexName($query->name)
-            ->makeAggregateBuilder()
-            ->apply("split(@" . $field . ")", $field)
-            ->groupBy($field)
-            ->count()
-            ->sortBy('count', false)
-            ->limit($config['offset'] ?: 0, $config['limit'] ?: 10)
-            ->search($search, true)
-        ;
+        try {
+            $terms = (new Index($this->client))
+                ->setIndexName($query->name)
+                ->makeAggregateBuilder()
+                ->load([$field])
+                ->apply("split(@" . $field . ")", $field)
+                ->groupBy($field)
+                ->count()
+                ->sortBy('count', false)
+                ->limit($config['offset'] ?: 0, $config['limit'] ?: 10)
+                ->search($search, true);
+        } catch (\Exception $e) {
+            return [];
+        }
 
         $type = $query->schema->getFieldType($field);
 
@@ -339,8 +343,8 @@ class Redisearch implements DriverInterface
     private function escape(string $text) : string
     {
         return str_replace(
-            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|', '%' ],
-            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|', '\%'],
+            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|', '%' , '/' ],
+            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|', '\%', '\/'],
             $text
         );
     }
