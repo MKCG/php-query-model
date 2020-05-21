@@ -264,12 +264,18 @@ class Redisearch implements DriverInterface
                         $values = explode(' ', $value);
                         $values = array_map('trim', $values);
                         $values = array_map([$this, 'escape'], $values);
-                        $last = array_pop($values) . ($wildcard ? '*' : '');
+                        $values = array_filter($values);
+                        $last = end($values);
 
                         $values = array_map(function($value) {
                             if (strlen($value) < 4) {
                                 return $value . '*';
                             }
+
+                            if (is_numeric($value)) {
+                                return $value;
+                            }
+
                             return strlen($value) < 6
                                 ? '%' . $value . '%'
                                 : (strlen($value) < 8
@@ -278,7 +284,10 @@ class Redisearch implements DriverInterface
                                 );
                         }, $values);
 
-                        array_push($values, $last);
+                        $lastTypo = array_pop($values);
+                        $lastPrefix = $last . ($wildcard ? '*' : '');
+
+                        array_push($values, sprintf('(%s|%s)', $lastTypo, $lastPrefix));
 
                         $search[] = '@' . $this->escape($field) . ':' . implode(' ', $values);
                         break;
@@ -343,8 +352,8 @@ class Redisearch implements DriverInterface
     private function escape(string $text) : string
     {
         return str_replace(
-            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|', '%' , '/' ],
-            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|', '\%', '\/'],
+            ['-',  '@',  ':',  '(',  ')',  '{',  '}',  '|', '%',  '/',  "'",  '"',  '[',  ']',  '&',  '!' ],
+            ['\-', '\@', '\:', '\(', '\)', '\{', '\}', '|', '\%', '\/', "\'", '\"', '\[', '\]', '\&', '\!'],
             $text
         );
     }
