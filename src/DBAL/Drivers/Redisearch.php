@@ -223,6 +223,7 @@ class Redisearch implements DriverInterface
         $terms = (new Index($this->client))
             ->setIndexName($query->name)
             ->makeAggregateBuilder()
+            ->apply("split(@" . $field . ")", $field)
             ->groupBy($field)
             ->count()
             ->sortBy('count', false)
@@ -255,7 +256,27 @@ class Redisearch implements DriverInterface
 
                 switch ($type) {
                     case FilterInterface::FILTER_FULLTEXT_MATCH:
-                        $search[] = sprintf("@%s:%s", $this->escape($field), $this->escape($value));
+                        $wildcard = $value[strlen($value) - 1] !== ' ';
+                        $values = explode(' ', $value);
+                        $values = array_map('trim', $values);
+                        $values = array_map([$this, 'escape'], $values);
+                        $last = array_pop($values) . ($wildcard ? '*' : '');
+
+                        $values = array_map(function($value) {
+                            if (strlen($value) < 4) {
+                                return $value . '*';
+                            }
+                            return strlen($value) < 6
+                                ? '%' . $value . '%'
+                                : (strlen($value) < 8
+                                    ? '%%' . $value . '%%'
+                                    : '%%%' . $value . '%%%'
+                                );
+                        }, $values);
+
+                        array_push($values, $last);
+
+                        $search[] = '@' . $this->escape($field) . ':' . implode(' ', $values);
                         break;
 
                     case FilterInterface::FILTER_GREATER_THAN:
