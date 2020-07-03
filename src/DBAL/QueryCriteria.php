@@ -147,6 +147,14 @@ class QueryCriteria
         return $this;
     }
 
+    public function addGroupBy(string $field) : self
+    {
+        $this->assert();
+
+        $this->criteria[$this->currentCollection]['group_by'] = $field ;
+        return $this;
+    }
+
     public function addOption(string $name, $value) : self
     {
         $this->assert();

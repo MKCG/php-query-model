@@ -49,6 +49,10 @@ class Doctrine implements DriverInterface
             $queryBuilder->addOrderBy($sort[0], $sort[1]);
         }
 
+        if (!empty($query->groupBy)) {
+            $queryBuilder->addGroupBy($query->groupBy);
+        }
+
         if ($query->limitByParent > 0) {
             $ids = $this->listIdsForeachParent($query, clone $queryBuilder);
 
