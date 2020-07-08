@@ -42,6 +42,7 @@ class QueryCriteria
     const TYPE_INT = 'int';
     const TYPE_PATH = 'path';
     const TYPE_URL = 'url';
+    const TYPE_STRING = 'string';
 
     private static $knownOptionsTypes = [
         'allow_partial' => self::TYPE_BOOL,
@@ -53,6 +54,7 @@ class QueryCriteria
         'multiple_requests' => self::TYPE_BOOL,
         'url' => self::TYPE_URL,
         'url_generator' => self::TYPE_CALLABLE,
+        'delimiter' => self::TYPE_STRING
     ];
 
     private $criteria = [];
@@ -196,6 +198,13 @@ class QueryCriteria
 
         $this->criteria[$this->currentCollection]['options'][$name] = $value;
 
+        return $this;
+    }
+
+    public function setPage(int $number, $countByPage) : self
+    {
+        $this->setNumber('limit', $countByPage);
+        $this->setNumber('offset', ($number - 1) * $countByPage);
         return $this;
     }
 

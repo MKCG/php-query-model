@@ -21,7 +21,7 @@ class CsvReader implements DriverInterface
 
     public function getSupportedOptions() : array
     {
-        return ['filepath', 'case_sensitive'];
+        return ['filepath', 'case_sensitive', 'delimiter'];
     }
 
     public function search(Query $query, ResultBuilderInterface $resultBuilder) : Result
@@ -175,7 +175,7 @@ class CsvReader implements DriverInterface
         $results = [];
 
         while ($found < $query->limit + $query->offset) {
-            $line = fgetcsv($handler);
+            $line = fgetcsv($handler, 0, $query->context['options']['delimiter'] ?? ',');
 
             if ($line === false || $line === null) {
                 $query->scroll->stop();
@@ -214,7 +214,7 @@ class CsvReader implements DriverInterface
         $header = null;
 
         if ($handler !== null) {
-            $header = fgetcsv($handler);
+            $header = fgetcsv($handler, 0, $query->context['options']['delimiter'] ?? ',');
 
             if (!is_array($header)) {
                 fclose($handler);

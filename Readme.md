@@ -148,6 +148,7 @@ Result-based filterable drivers :
 | ----------------- | ---------------------------------------- | ----------------------------------------------------------------------------- |
 | case_sensitive    | MongoDB, Result-based filterable drivers | Perform case sensitive `FILTER_FULLTEXT_MATCH` search , default : `false`     |
 | filepath          | CsvReader                                | Absolute or relative filepath of the CSV                                      |
+| delimiter         | CsvReader                                | Field delimiter                                                               |
 | json_formatter    | HTTP                                     | Format JSON response body using a callback                                    |
 | multiple_requests | none , used by the QueryEngine           | Disable sub-requests batching when including sub-models                       |
 | url               | HTTP-based drivers                       | Define the URL to use to query                                                |
