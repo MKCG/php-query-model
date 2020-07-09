@@ -31,8 +31,11 @@ class GuzzleHttp implements HttpClientInterface
 
         try {
             $response = ($this->client ?: new Client())->send($guzzleRequest, $options);
-        } catch (\GuzzleHttp\Exception\ServerException $e) {
+        } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             $response = $e->getResponse();
+        } catch (\GuzzleHttp\Exception\RequestException $e) {
+            // timeout, ...
+            return new HttpResponse(0, '', '', $request);
         }
 
         $contentType = $response->getHeader('Content-Type');
