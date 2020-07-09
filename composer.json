@@ -1,6 +1,6 @@
 {
     "name": "mkcg/php-query-model",
-    "version": "0.9.11",
+    "version": "0.9.12",
     "type": "library",
     "description": "Agnostic model to efficiently query and scroll any kind of data (SQL, Search engine, HTTP API, CSV, ...) and push them anywhere with a ETL",
     "homepage": "https://github.com/MKCG/php-query-model",
@@ -51,7 +51,8 @@
         "doctrine/dbal": "Needed to use the doctrine driver",
         "predis/predis": "Needed to use the redis driver",
         "ethanhann/redisearch-php": "Needed to use the redisearch driver",
-        "guzzle/guzzle": "Needed to use the Guzzle HTTP adapter",
+        "guzzle/guzzle": "Needed to use the Guzzle adapter",
+        "guzzlehttp/guzzle": "Needed to use the GuzzleHttp adapter",
         "mongodb/mongodb": "Needed to use the Mongodb driver"
     }
 }

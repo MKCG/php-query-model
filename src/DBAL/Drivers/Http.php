@@ -158,15 +158,31 @@ class Http implements DriverInterface
             throw new \Exception("Invalid HTTP configuration provided");
         }
 
-        $configuration = $query->context['http'] ?: new Configurations\Http();
+        $configuration = isset($query->context['http'])
+            ? $query->context['http']
+            : new Configurations\Http();
 
-        $options = $query->context['options'] ?: [];
+        $options = isset($query->context['options'])
+            ? $query->context['options']
+            : [];
 
         $request = new HttpRequest();
-        $request->uri = $options['uri'] ?: ($configuration->getUri() ?: $this->defaultUri);
-        $request->method = $options['method'] ?: ($configuration->getMethod() ?: $this->defaultMethod);
-        $request->headers = $options['headers'] ?: ($configuration->getHeaders() ?: $this->defaultHeaders);
-        $request->options = $options['options'] ?: ($configuration->getOptions() ?: $this->defaultOptions);
+
+        $request->uri = isset($options['uri'])
+            ? $options['uri']
+            : ($configuration->getUri() ?: $this->defaultUri);
+
+        $request->method = isset($options['method'])
+            ? $options['method']
+            : ($configuration->getMethod() ?: $this->defaultMethod);
+
+        $request->headers = isset($options['headers'])
+            ? $options['headers']
+            : ($configuration->getHeaders() ?: $this->defaultHeaders);
+
+        $request->options = isset($options['options'])
+            ? $options['options']
+            : ($configuration->getOptions() ?: $this->defaultOptions);
 
         $timeout = filter_var($options['max_query_time'] ?: 0, FILTER_VALIDATE_INT);
 
