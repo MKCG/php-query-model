@@ -221,10 +221,15 @@ class Redisearch implements DriverInterface
     private function makeTermsAgg(Query $query, string $field, array $config, string $search)
     {
         try {
-            $terms = (new Index($this->client))
+            $aggregationBuilder = (new Index($this->client))
                 ->setIndexName($query->name)
-                ->makeAggregateBuilder()
-                ->load([$field])
+                ->makeAggregateBuilder();
+
+            if ($query->schema->isSortable($field) === false) {
+                $aggregationBuilder->load([$field]);
+            }
+
+            $terms = $aggregationBuilder
                 ->apply("split(@" . $field . ")", $field)
                 ->groupBy($field)
                 ->count()
@@ -287,7 +292,11 @@ class Redisearch implements DriverInterface
                         $lastTypo = array_pop($values);
                         $lastPrefix = $last . ($wildcard ? '*' : '');
 
-                        array_push($values, sprintf('(%s|%s)', $lastTypo, $lastPrefix));
+                        if ($lastTypo !== $lastPrefix) {
+                            array_push($values, sprintf('(%s|%s)', $lastTypo, $lastPrefix));
+                        } else {
+                            array_push($values, $lastTypo);
+                        }
 
                         $search[] = '@' . $this->escape($field) . ':' . implode(' ', $values);
                         break;
