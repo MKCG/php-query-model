@@ -12,6 +12,7 @@ class Query
     public $callableFilters = [];
     public $aggregations = [];
     public $sort = [];
+    public $groupBy = '';
     public $offset = 0;
     public $limit = 0;
     public $limitByParent = 0;
@@ -63,6 +64,10 @@ class Query
 
         if (isset($criteria['sort'])) {
             $query->sort = $criteria['sort'];
+        }
+
+        if (isset($criteria['group_by'])) {
+            $query->groupBy = $criteria['group_by'];
         }
 
         $query->context = $schema->getConfigurations();
